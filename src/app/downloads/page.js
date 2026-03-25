@@ -8,14 +8,35 @@ export default function DownloadsPage() {
       slug: "scripts",
       icon: "📜",
       description: "Inventory, HUD, Menus, Jobs & more",
-      items: ["Inventory", "HUD", "Menus", "Jobs", "Heists", "Maps", "Chats", "Loadscreens", "Phones", "Peds", "Guns"],
+      items: ["Inventory", "HUD", "Menus", "Jobs", "Heists", "Maps", "Chats", "Loadscreens", "Phones"],
     },
     {
       title: "Free Cars",
       slug: "cars",
       icon: "🚗",
       description: "35+ vehicle brands",
-      items: ["Audi", "Dodge", "Ford", "BMW", "Toyota", "Chevy", "Lamborghini", "Ferrari", "Tesla", "Porsche"],
+      items: ["Audi", "Dodge", "Ford", "BMW", "Toyota", "Chevy", "Lamborghini", "Ferrari", "Tesla"],
+    },
+    {
+      title: "Free Guns",
+      slug: "guns",
+      icon: "🔫",
+      description: "Weapons, firearms & gun scripts",
+      items: ["Pistols", "Rifles", "Shotguns", "SMGs", "Sniper", "Heavy Weapons"],
+    },
+    {
+      title: "Free Peds",
+      slug: "peds",
+      icon: "👥",
+      description: "Character models & skins",
+      items: ["Civilian", "Police", "Emergency", "Gang", "Custom"],
+    },
+    {
+      title: "Free Maps",
+      slug: "maps",
+      icon: "🗺️",
+      description: "MLOs, interiors & locations",
+      items: ["MLOs", "Interiors", "Race Tracks", "Add-on Maps"],
     },
     {
       title: "Free Clothing",
@@ -45,36 +66,36 @@ export default function DownloadsPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-6 pb-20">
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {sections.map((section) => (
             <Link
               key={section.title}
               href={`/downloads/${section.slug}`}
-              className="group rounded-2xl border border-gray-800 bg-zinc-900/50 p-8 transition hover:border-indigo-500 hover:bg-zinc-900"
+              className="group rounded-2xl border border-gray-800 bg-zinc-900/50 p-6 transition hover:border-indigo-500 hover:bg-zinc-900"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="text-5xl group-hover:scale-110 transition">{section.icon}</div>
                 <div className="text-right">
-                  <h2 className="text-2xl font-bold">{section.title}</h2>
-                  <p className="text-sm text-gray-400">{section.description}</p>
+                  <h2 className="text-xl font-bold">{section.title}</h2>
+                  <p className="text-xs text-gray-400">{section.description}</p>
                 </div>
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                {section.items.slice(0, 8).map((item) => (
-                  <div key={item} className="rounded-lg bg-gray-800/50 px-3 py-1.5 text-xs">
+              <div className="mt-3 flex flex-wrap gap-2">
+                {section.items.slice(0, 5).map((item) => (
+                  <div key={item} className="rounded-lg bg-gray-800/50 px-2 py-1 text-xs">
                     {item}
                   </div>
                 ))}
-                {section.items.length > 8 && (
-                  <div className="rounded-lg bg-indigo-500/20 px-3 py-1.5 text-xs text-indigo-400">
-                    +{section.items.length - 8} more
+                {section.items.length > 5 && (
+                  <div className="rounded-lg bg-indigo-500/20 px-2 py-1 text-xs text-indigo-400">
+                    +{section.items.length - 5} more
                   </div>
                 )}
               </div>
 
-              <div className="mt-6">
-                <span className="inline-flex items-center gap-2 text-indigo-400 group-hover:gap-3 transition">
+              <div className="mt-4">
+                <span className="inline-flex items-center gap-2 text-indigo-400 group-hover:gap-3 transition text-sm">
                   Browse {section.title.toLowerCase()} →
                 </span>
               </div>

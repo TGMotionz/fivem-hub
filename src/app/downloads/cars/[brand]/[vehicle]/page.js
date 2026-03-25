@@ -2,20 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 import FavoriteButton from "@/components/FavoriteButton";
 import Header from "@/components/Header";
 import Comments from "@/components/Comments";
 import ShareButtons from "@/components/ShareButtons";
-
-const brandNames = {
-  dodge: "Dodge", ferrari: "Ferrari", bmw: "BMW", tesla: "Tesla",
-  audi: "Audi", mercedes: "Mercedes", porsche: "Porsche",
-  lamborghini: "Lamborghini", ford: "Ford", chevrolet: "Chevrolet",
-};
-
-function formatSlug(text) {
-  return text.split("-").map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
-}
 
 function getPlatformIcon(url) {
   if (!url) return null;
@@ -28,7 +19,6 @@ function getPlatformIcon(url) {
 
 async function trackView(slug, userId) {
   try {
-    // Update content item view count
     const { data: existing } = await supabase
       .from("content_items")
       .select("views")
@@ -40,25 +30,14 @@ async function trackView(slug, userId) {
         .from("content_items")
         .update({ views: (existing.views || 0) + 1 })
         .eq("slug", slug);
-    } else {
-      await supabase
-        .from("content_items")
-        .insert({
-          slug: slug,
-          type: "vehicle",
-          name: formatSlug(slug),
-          views: 1,
-        });
     }
     
-    // Record view analytics
     await supabase
       .from("view_analytics")
       .insert({
         content_slug: slug,
         content_type: "vehicle",
         user_id: userId || null,
-        ip_address: "client-side",
         viewed_at: new Date(),
       });
   } catch (error) {
@@ -68,7 +47,6 @@ async function trackView(slug, userId) {
 
 async function trackDownload(slug, userId) {
   try {
-    // Update content item download count
     const { data: existing } = await supabase
       .from("content_items")
       .select("downloads")
@@ -82,14 +60,12 @@ async function trackDownload(slug, userId) {
         .eq("slug", slug);
     }
     
-    // Record download analytics
     await supabase
       .from("download_analytics")
       .insert({
         content_slug: slug,
         content_type: "vehicle",
         user_id: userId || null,
-        ip_address: "client-side",
         downloaded_at: new Date(),
       });
   } catch (error) {
@@ -103,12 +79,13 @@ export default function VehicleDetailPage({ params }) {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     async function loadParams() {
       const resolved = await params;
-      setBrand(resolved.brand);
-      setVehicle(resolved.vehicle);
+      setBrand(resolved.brand || "");
+      setVehicle(resolved.vehicle || "");
     }
     loadParams();
     
@@ -121,22 +98,43 @@ export default function VehicleDetailPage({ params }) {
 
   useEffect(() => {
     async function loadContent() {
-      if (!vehicle) return;
+      if (!vehicle) {
+        setLoading(false);
+        return;
+      }
       
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("content_items")
         .select("*")
         .eq("slug", vehicle)
         .eq("type", "vehicle")
         .maybeSingle();
       
+      if (error || !data) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+      
       setContent(data);
       setLoading(false);
-      if (data) trackView(vehicle, userId);
+      trackView(vehicle, userId);
     }
     
     if (vehicle) loadContent();
   }, [vehicle, userId]);
+
+  const brandNames = {
+    dodge: "Dodge",
+    ferrari: "Ferrari",
+    bmw: "BMW",
+    tesla: "Tesla",
+    audi: "Audi",
+    mercedes: "Mercedes",
+    porsche: "Porsche",
+  };
+
+  const displayBrand = brandNames[brand] || (brand ? brand.charAt(0).toUpperCase() + brand.slice(1) : "");
 
   if (loading) {
     return (
@@ -150,21 +148,23 @@ export default function VehicleDetailPage({ params }) {
     );
   }
 
-  const brandName = brandNames[brand] || formatSlug(brand);
-  const item = content || {
-    name: formatSlug(vehicle),
-    version: "v1.0",
-    author: "FiveM Free Hub",
-    description: "Content coming soon!",
-    features: ["Coming soon"],
-    install_steps: ["Download", "Add to resources", "Configure"],
-    download_url: null,
-    image_url: null,
-    views: 0,
-    downloads: 0,
-  };
+  if (notFound || !content) {
+    return (
+      <main className="min-h-screen bg-black text-white">
+        <Header />
+        <div className="text-center py-20">
+          <div className="text-6xl mb-4">🚗</div>
+          <h1 className="text-2xl font-bold mb-2">Vehicle Not Found</h1>
+          <p className="text-gray-400">The vehicle you're looking for doesn't exist or has been removed.</p>
+          <Link href="/downloads/cars" className="mt-6 inline-block text-indigo-400 hover:text-indigo-300">
+            ← Browse All Vehicles
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
-  const platform = getPlatformIcon(item.download_url);
+  const platform = getPlatformIcon(content.download_url);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-white">
@@ -172,50 +172,48 @@ export default function VehicleDetailPage({ params }) {
 
       <section className="mx-auto max-w-7xl px-6 py-12">
         <div className="grid gap-10 lg:grid-cols-2">
-          {/* Image Section */}
           <div className="rounded-2xl border border-gray-800 bg-zinc-900/50 p-4">
             <div className="flex h-[320px] items-center justify-center rounded-xl bg-gray-800 overflow-hidden">
-              {item.image_url ? (
-                <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+              {content.image_url ? (
+                <img src={content.image_url} alt={content.name} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-6xl">🚗</span>
               )}
             </div>
           </div>
 
-          {/* Info Section */}
           <div>
-            <p className="text-sm uppercase tracking-widest text-gray-400">{brandName}</p>
-            <h1 className="mt-2 text-4xl font-bold">{item.name}</h1>
+            <p className="text-sm uppercase tracking-widest text-gray-400">{displayBrand}</p>
+            <h1 className="mt-2 text-4xl font-bold">{content.name}</h1>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-xl border border-gray-800 p-4">
                 <p className="text-sm text-gray-400">Version</p>
-                <p className="font-semibold">{item.version}</p>
+                <p className="font-semibold">{content.version || "v1.0.0"}</p>
               </div>
               <div className="rounded-xl border border-gray-800 p-4">
                 <p className="text-sm text-gray-400">Author</p>
-                <p className="font-semibold">{item.author}</p>
+                <p className="font-semibold">{content.author || "FiveM Free Hub"}</p>
               </div>
               <div className="rounded-xl border border-gray-800 p-4">
                 <p className="text-sm text-gray-400">Category</p>
-                <p className="font-semibold">{brandName}</p>
+                <p className="font-semibold capitalize">{content.category}</p>
               </div>
               <div className="rounded-xl border border-gray-800 p-4">
                 <p className="text-sm text-gray-400">Statistics</p>
                 <div className="flex gap-4 mt-1">
-                  <span>👁️ {item.views || 0}</span>
-                  <span>⬇️ {item.downloads || 0}</span>
+                  <span>👁️ {content.views || 0}</span>
+                  <span>⬇️ {content.downloads || 0}</span>
                 </div>
               </div>
             </div>
 
-            <p className="mt-6 text-gray-300">{item.description}</p>
+            <p className="mt-6 text-gray-300">{content.description}</p>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              {item.download_url ? (
+              {content.download_url ? (
                 <a
-                  href={item.download_url}
+                  href={content.download_url}
                   onClick={() => trackDownload(vehicle, userId)}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -231,39 +229,42 @@ export default function VehicleDetailPage({ params }) {
               <a href="https://discord.gg/qf367wWS" target="_blank" className="rounded-lg border border-gray-700 px-5 py-3 hover:bg-white/10">
                 💬 Support
               </a>
-              <FavoriteButton brand={brand} vehicleSlug={vehicle} vehicleName={item.name} />
+              <FavoriteButton brand={brand} vehicleSlug={vehicle} vehicleName={content.name} />
             </div>
 
-            {/* Share Buttons */}
             <div className="mt-4 pt-4 border-t border-gray-800">
               <p className="text-sm text-gray-400 mb-2">Share this content:</p>
-              <ShareButtons title={item.name} url={`/downloads/cars/${brand}/${vehicle}`} />
+              <ShareButtons title={content.name} url={`/downloads/cars/${brand}/${vehicle}`} />
             </div>
           </div>
         </div>
 
-        {/* Features and Installation */}
         <div className="grid gap-8 lg:grid-cols-2 mt-12">
           <div className="rounded-2xl border border-gray-800 p-6">
             <h2 className="text-2xl font-bold">✨ Features</h2>
             <ul className="mt-4 space-y-2">
-              {(item.features || []).map((f, i) => (
+              {(content.features || []).map((f, i) => (
                 <li key={i} className="rounded-lg bg-black/30 px-4 py-2">✓ {f}</li>
               ))}
+              {(!content.features || content.features.length === 0) && (
+                <li className="text-gray-400">No features listed yet.</li>
+              )}
             </ul>
           </div>
           <div className="rounded-2xl border border-gray-800 p-6">
             <h2 className="text-2xl font-bold">📦 Installation</h2>
             <div className="mt-4 space-y-2">
-              {(item.install_steps || []).map((s, i) => (
+              {(content.install_steps || []).map((s, i) => (
                 <p key={i} className="rounded-lg bg-black/30 px-4 py-2">{i+1}. {s}</p>
               ))}
+              {(!content.install_steps || content.install_steps.length === 0) && (
+                <p className="text-gray-400">No installation steps provided yet.</p>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Comments Section */}
       <div className="mx-auto max-w-7xl px-6 pb-20">
         <Comments contentId={vehicle} contentType="vehicle" />
       </div>

@@ -1,19 +1,21 @@
+"use client";
+
 import Link from "next/link";
 import Header from "@/components/Header";
 
 export default function ScriptsPage() {
   const scriptCategories = [
-    { name: "Inventory", slug: "inventory", icon: "📦", description: "Inventory systems and UI", count: 12 },
-    { name: "HUD", slug: "hud", icon: "📊", description: "Heads-up displays", count: 8 },
-    { name: "Menus", slug: "menus", icon: "📋", description: "Interactive menu systems", count: 15 },
-    { name: "Jobs", slug: "jobs", icon: "💼", description: "Job and career systems", count: 10 },
-    { name: "Heists", slug: "heists", icon: "💰", description: "Heist and robbery scripts", count: 7 },
-    { name: "Maps", slug: "maps", icon: "🗺️", description: "Map modifications", count: 20 },
-    { name: "Chats", slug: "chats", icon: "💬", description: "Chat systems", count: 6 },
-    { name: "Loadscreens", slug: "loadscreens", icon: "⏳", description: "Loading screens", count: 9 },
-    { name: "Phones", slug: "phones", icon: "📱", description: "In-game phone systems", count: 5 },
-    { name: "Peds", slug: "peds", icon: "👥", description: "Pedestrian models", count: 14 },
-    { name: "Guns", slug: "guns", icon: "🔫", description: "Weapon scripts", count: 11 },
+    { name: "Inventory", slug: "inventory", icon: "📦", description: "Inventory systems and UI" },
+    { name: "HUD", slug: "hud", icon: "📊", description: "Heads-up displays" },
+    { name: "Menus", slug: "menus", icon: "📋", description: "Interactive menu systems" },
+    { name: "Jobs", slug: "jobs", icon: "💼", description: "Job and career systems" },
+    { name: "Heists", slug: "heists", icon: "💰", description: "Heist and robbery scripts" },
+    { name: "Maps", slug: "maps", icon: "🗺️", description: "Map modifications" },
+    { name: "Chats", slug: "chats", icon: "💬", description: "Chat systems" },
+    { name: "Loadscreens", slug: "loadscreens", icon: "⏳", description: "Loading screens" },
+    { name: "Phones", slug: "phones", icon: "📱", description: "In-game phone systems" },
+    { name: "Peds", slug: "peds", icon: "👥", description: "Pedestrian models" },
+    { name: "Guns", slug: "guns", icon: "🔫", description: "Weapon scripts" },
   ];
 
   return (
@@ -23,7 +25,7 @@ export default function ScriptsPage() {
       <section className="mx-auto max-w-7xl px-6 py-16 text-center">
         <h1 className="text-5xl font-bold mb-4">Free Scripts</h1>
         <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-          Browse script categories from your Discord. Find inventory systems, HUDs, menus, and more.
+          Browse script categories. Find inventory systems, HUDs, menus, and more.
         </p>
       </section>
 
@@ -38,7 +40,7 @@ export default function ScriptsPage() {
               <div className="text-5xl mb-4 group-hover:scale-110 transition">{category.icon}</div>
               <h2 className="text-2xl font-bold">{category.name}</h2>
               <p className="mt-2 text-sm text-gray-400">{category.description}</p>
-              <div className="mt-4 text-xs text-indigo-400">{category.count} scripts available</div>
+              <div className="mt-4 text-xs text-indigo-400">0 scripts available</div>
               <div className="mt-5">
                 <span className="inline-flex items-center gap-2 text-indigo-400 group-hover:gap-3 transition">
                   Browse scripts →

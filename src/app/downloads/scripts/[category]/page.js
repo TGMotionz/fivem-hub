@@ -1,146 +1,125 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-
-const categoryData = {
-  inventory: {
-    name: "Inventory",
-    scripts: [
-      { name: "Advanced Inventory System", slug: "advanced-inventory", version: "v2.0", downloads: 1250 },
-      { name: "Simple Inventory UI", slug: "simple-inventory", version: "v1.5", downloads: 890 },
-      { name: "Weight-Based Inventory", slug: "weight-inventory", version: "v1.2", downloads: 560 },
-    ],
-  },
-  hud: {
-    name: "HUD",
-    scripts: [
-      { name: "Modern Speedometer HUD", slug: "modern-speedometer", version: "v1.0", downloads: 2100 },
-      { name: "Minimalist HUD", slug: "minimalist-hud", version: "v2.1", downloads: 1540 },
-      { name: "Racing HUD", slug: "racing-hud", version: "v1.8", downloads: 890 },
-    ],
-  },
-  menus: {
-    name: "Menus",
-    scripts: [
-      { name: "Interactive Radial Menu", slug: "radial-menu", version: "v3.0", downloads: 3200 },
-      { name: "Vehicle Spawner Menu", slug: "vehicle-spawner", version: "v1.2", downloads: 1870 },
-    ],
-  },
-  jobs: {
-    name: "Jobs",
-    scripts: [
-      { name: "Taxi Job System", slug: "taxi-job", version: "v1.0", downloads: 950 },
-      { name: "Mechanic Job", slug: "mechanic-job", version: "v2.3", downloads: 1430 },
-      { name: "Police Job", slug: "police-job", version: "v1.5", downloads: 2100 },
-    ],
-  },
-};
-
-function formatSlug(text) {
-  return text
-    .split("-")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
+import Header from "@/components/Header";
 
 export default function ScriptCategoryPage({ params }) {
   const [category, setCategory] = useState("");
+  const [scripts, setScripts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadParams() {
-      const resolvedParams = await params;
-      setCategory(resolvedParams.category);
-      setLoading(false);
+      const resolved = await params;
+      setCategory(resolved.category || "");
     }
     loadParams();
   }, [params]);
 
+  useEffect(() => {
+    async function loadScripts() {
+      if (!category) {
+        setLoading(false);
+        return;
+      }
+      
+      const { data } = await supabase
+        .from("content_items")
+        .select("*")
+        .eq("type", "script")
+        .eq("category", category)
+        .order("created_at", { ascending: false });
+      
+      if (data) {
+        setScripts(data);
+      }
+      setLoading(false);
+    }
+    
+    loadScripts();
+  }, [category]);
+
+  const categoryNames = {
+    inventory: "Inventory",
+    hud: "HUD",
+    menus: "Menus",
+    jobs: "Jobs",
+    heists: "Heists",
+    maps: "Maps",
+    chats: "Chats",
+    loadscreens: "Loadscreens",
+    phones: "Phones",
+    peds: "Peds",
+    guns: "Guns",
+  };
+
+  const displayName = categoryNames[category] || (category ? category.charAt(0).toUpperCase() + category.slice(1) : "Scripts");
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black text-white">
-        <div className="mx-auto max-w-7xl px-6 py-20 text-center">
-          <p className="text-gray-400">Loading...</p>
+        <Header />
+        <div className="text-center py-20">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
+          <p className="mt-4 text-gray-400">Loading scripts...</p>
         </div>
       </main>
     );
   }
 
-  const categoryInfo = categoryData[category] || {
-    name: formatSlug(category),
-    scripts: [
-      { name: `${formatSlug(category)} Script 1`, slug: `${category}-script-1`, version: "v1.0", downloads: 0 },
-      { name: `${formatSlug(category)} Script 2`, slug: `${category}-script-2`, version: "v1.0", downloads: 0 },
-    ],
-  };
-
   return (
-    <main className="min-h-screen bg-black text-white">
-      <header className="border-b border-gray-800 p-6">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <a href="/" className="text-2xl font-bold">
-            FiveM Free Hub
-          </a>
-
-          <div className="flex gap-3">
-            <a
-              href="/downloads/scripts"
-              className="rounded-lg border border-gray-700 px-4 py-2 text-sm"
-            >
-              ← Back to Scripts
-            </a>
-            <a
-              href="/favorites"
-              className="rounded-lg border border-gray-700 px-4 py-2 text-sm"
-            >
-              My Favorites
-            </a>
-            <a
-              href="https://discord.gg/qf367wWS"
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black"
-            >
-              Join Discord
-            </a>
-          </div>
-        </div>
-      </header>
+    <main className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-white">
+      <Header />
 
       <section className="mx-auto max-w-7xl px-6 py-12">
-        <h1 className="text-4xl font-bold">{categoryInfo.name}</h1>
-        <p className="mt-3 max-w-2xl text-gray-400">
-          Free {categoryInfo.name.toLowerCase()} scripts for your FiveM server.
-        </p>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 pb-16">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {categoryInfo.scripts.map((script) => (
-            <Link
-              key={script.slug}
-              href={`/downloads/scripts/${category}/${script.slug}`}
-              className="rounded-2xl border border-gray-800 bg-zinc-950 p-6 transition hover:border-gray-600 hover:bg-zinc-900"
-            >
-              <div className="mb-4 h-32 rounded-xl bg-gray-800 flex items-center justify-center text-4xl">
-                📜
-              </div>
-              <h2 className="text-xl font-bold">{script.name}</h2>
-              <p className="mt-2 text-sm text-gray-400">
-                Version: {script.version}
-              </p>
-              <div className="mt-4 flex gap-4 text-xs text-gray-500">
-                <span>⬇️ {script.downloads.toLocaleString()} downloads</span>
-              </div>
-              <div className="mt-5">
-                <span className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black inline-block">
-                  View Details →
-                </span>
-              </div>
-            </Link>
-          ))}
+        <div className="flex items-center gap-3 mb-8">
+          <Link href="/downloads/scripts" className="text-gray-400 hover:text-white">
+            ← Back to Scripts
+          </Link>
+          <h1 className="text-3xl font-bold">{displayName}</h1>
+          <span className="text-sm text-gray-400">({scripts.length} scripts)</span>
         </div>
+
+        {scripts.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">📜</div>
+            <p className="text-gray-400">No scripts found in {displayName}.</p>
+            <Link href="/submit" className="mt-4 inline-block text-indigo-400 hover:text-indigo-300">
+              Be the first to submit a script!
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {scripts.map((script) => (
+              <Link
+                key={script.id}
+                href={`/downloads/scripts/${category}/${script.slug}`}
+                className="group rounded-2xl border border-gray-800 bg-zinc-900/50 p-6 transition hover:border-indigo-500 hover:bg-zinc-900"
+              >
+                <div className="mb-4 h-40 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-5xl group-hover:scale-110 transition overflow-hidden">
+                  {script.image_url ? (
+                    <img src={script.image_url} alt={script.name} className="w-full h-full object-cover" />
+                  ) : (
+                    "📜"
+                  )}
+                </div>
+                <h2 className="text-xl font-bold">{script.name}</h2>
+                <p className="mt-2 text-sm text-gray-400 line-clamp-2">{script.description}</p>
+                <div className="mt-4 flex gap-4 text-xs text-gray-500">
+                  <span>👁️ {script.views || 0}</span>
+                  <span>⬇️ {script.downloads || 0}</span>
+                </div>
+                <div className="mt-4">
+                  <span className="inline-block rounded-lg bg-white px-4 py-2 text-sm font-semibold text-black group-hover:bg-gray-200 transition">
+                    View Details →
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );

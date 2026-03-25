@@ -48,19 +48,31 @@ export default function SubmitPage() {
     vehicle: ["dodge", "ferrari", "bmw", "tesla", "audi", "mercedes", "porsche", "lamborghini", "ford", "chevrolet"],
     script: ["inventory", "hud", "menus", "jobs", "heists", "maps", "chats", "loadscreens", "phones", "peds", "guns"],
     clothing: ["male", "female", "uniforms", "eup"],
+    server_ad: ["free", "paid", "partners"],
+    gun: ["pistols", "rifles", "shotguns", "smgs", "sniper", "heavy"],
+    ped: ["civilian", "police", "emergency", "gang", "custom"],
+    map: ["mlos", "interiors", "race", "addon", "misc"],
+  };
+
+  const typeIcons = {
+    vehicle: "🚗",
+    script: "📜",
+    clothing: "👕",
+    server_ad: "📢",
+    gun: "🔫",
+    ped: "👥",
+    map: "🗺️",
   };
 
   async function handleImageUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
     
-    // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setMessage("❌ Image must be less than 5MB");
       return;
     }
     
-    // Check file type
     if (!file.type.startsWith("image/")) {
       setMessage("❌ Please upload an image file");
       return;
@@ -69,14 +81,12 @@ export default function SubmitPage() {
     setUploadingImage(true);
     
     try {
-      // Create a preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
       
-      // Upload to Supabase storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `submissions/${user.id}/${fileName}`;
@@ -86,11 +96,8 @@ export default function SubmitPage() {
         .upload(filePath, file);
       
       if (error) {
-        console.error("Upload error:", error);
-        // Still use base64 preview as fallback
         setFormData({ ...formData, image_url: imagePreview });
       } else {
-        // Get public URL
         const { data: urlData } = supabase.storage
           .from("content-images")
           .getPublicUrl(filePath);
@@ -100,7 +107,6 @@ export default function SubmitPage() {
         setTimeout(() => setMessage(""), 3000);
       }
     } catch (error) {
-      console.error("Error:", error);
       setMessage("❌ Failed to upload image");
     } finally {
       setUploadingImage(false);
@@ -118,9 +124,8 @@ export default function SubmitPage() {
       return;
     }
 
-    // Validate required fields - IMAGE IS NOW REQUIRED
     if (!formData.name || !formData.category || !formData.description || !formData.download_url) {
-      setMessage("❌ Please fill in all required fields (Name, Category, Description, Download URL)");
+      setMessage("❌ Please fill in all required fields");
       setLoading(false);
       return;
     }
@@ -131,7 +136,8 @@ export default function SubmitPage() {
       return;
     }
 
-    // Create submission
+    const slug = formData.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
     const { data, error } = await supabase
       .from("submissions")
       .insert([{
@@ -222,8 +228,8 @@ export default function SubmitPage() {
             {/* Type Selection */}
             <div>
               <label className="block text-sm font-semibold mb-2">Content Type *</label>
-              <div className="flex gap-4">
-                {["vehicle", "script", "clothing"].map((type) => (
+              <div className="flex flex-wrap gap-4">
+                {["vehicle", "script", "clothing", "server_ad", "gun", "ped", "map"].map((type) => (
                   <label key={type} className="flex items-center gap-2">
                     <input
                       type="radio"
@@ -232,7 +238,9 @@ export default function SubmitPage() {
                       onChange={(e) => setFormData({ ...formData, type: e.target.value, category: "" })}
                       className="w-4 h-4 text-indigo-500"
                     />
-                    <span className="capitalize">{type}</span>
+                    <span className="capitalize flex items-center gap-1">
+                      {typeIcons[type]} {type.replace("_", " ")}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -306,7 +314,7 @@ export default function SubmitPage() {
               <p className="text-xs text-gray-500 mt-1">Google Drive, MediaFire, or direct link</p>
             </div>
 
-            {/* Image Upload - REQUIRED */}
+            {/* Image Upload */}
             <div>
               <label className="block text-sm font-semibold mb-2">Preview Image *</label>
               <div className="flex flex-col gap-4">
@@ -324,21 +332,12 @@ export default function SubmitPage() {
                   <span className="text-sm text-gray-400">Max 5MB (JPG, PNG, GIF)</span>
                 </div>
                 
-                {/* Image Preview */}
                 {imagePreview && (
                   <div className="mt-2">
                     <div className="rounded-xl overflow-hidden border border-gray-700 w-32 h-32">
                       <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                     </div>
                     <p className="text-xs text-green-400 mt-1">✓ Image ready</p>
-                  </div>
-                )}
-                
-                {!imagePreview && formData.image_url && (
-                  <div className="mt-2">
-                    <div className="rounded-xl overflow-hidden border border-gray-700 w-32 h-32">
-                      <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
-                    </div>
                   </div>
                 )}
                 

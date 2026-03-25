@@ -6,12 +6,8 @@ import Link from "next/link";
 import Header from "@/components/Header";
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState({
-    scripts: [],
-    vehicles: [],
-    clothing: [],
-    serverAds: [],
-  });
+  const [scripts, setScripts] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,7 +23,7 @@ export default function CategoriesPage() {
         scriptsData?.forEach(item => {
           scriptCounts[item.category] = (scriptCounts[item.category] || 0) + 1;
         });
-        const scripts = Object.entries(scriptCounts).map(([name, count]) => ({ name, count }));
+        const scriptsList = Object.entries(scriptCounts).map(([name, count]) => ({ name, count }));
 
         // Load vehicles grouped by category
         const { data: vehiclesData } = await supabase
@@ -39,29 +35,10 @@ export default function CategoriesPage() {
         vehiclesData?.forEach(item => {
           vehicleCounts[item.category] = (vehicleCounts[item.category] || 0) + 1;
         });
-        const vehicles = Object.entries(vehicleCounts).map(([name, count]) => ({ name, count }));
+        const vehiclesList = Object.entries(vehicleCounts).map(([name, count]) => ({ name, count }));
 
-        // Clothing categories
-        const clothingCategories = [
-          { name: "Male Clothing", slug: "male", icon: "👨", count: 25 },
-          { name: "Female Clothing", slug: "female", icon: "👩", count: 28 },
-          { name: "Uniforms", slug: "uniforms", icon: "👔", count: 15 },
-          { name: "EUP Packs", slug: "eup", icon: "🎭", count: 12 },
-        ];
-
-        // Server ad categories
-        const serverAdCategories = [
-          { name: "Free Server Ads", slug: "free", icon: "🎁", description: "Promote your server for free" },
-          { name: "Paid Server Promotion", slug: "paid", icon: "⭐", description: "Featured listings" },
-          { name: "Partners", slug: "partners", icon: "🤝", description: "Partner with us" },
-        ];
-
-        setCategories({
-          scripts: scripts,
-          vehicles: vehicles,
-          clothing: clothingCategories,
-          serverAds: serverAdCategories,
-        });
+        setScripts(scriptsList);
+        setVehicles(vehiclesList);
       } catch (error) {
         console.error("Error loading categories:", error);
       } finally {
@@ -76,6 +53,45 @@ export default function CategoriesPage() {
     inventory: "📦", hud: "📊", menus: "📋", jobs: "💼", heists: "💰",
     maps: "🗺️", chats: "💬", loadscreens: "⏳", phones: "📱", peds: "👥", guns: "🔫",
   };
+
+  // Predefined categories for new types
+  const guns = [
+    { name: "Pistols", slug: "pistols", icon: "🔫" },
+    { name: "Rifles", slug: "rifles", icon: "🔫" },
+    { name: "Shotguns", slug: "shotguns", icon: "🔫" },
+    { name: "SMGs", slug: "smgs", icon: "🔫" },
+    { name: "Sniper", slug: "sniper", icon: "🎯" },
+    { name: "Heavy Weapons", slug: "heavy", icon: "💣" },
+  ];
+
+  const peds = [
+    { name: "Civilian", slug: "civilian", icon: "👤" },
+    { name: "Police", slug: "police", icon: "👮" },
+    { name: "Emergency", slug: "emergency", icon: "🚑" },
+    { name: "Gang", slug: "gang", icon: "😎" },
+    { name: "Custom", slug: "custom", icon: "✨" },
+  ];
+
+  const maps = [
+    { name: "MLOs", slug: "mlos", icon: "🏢" },
+    { name: "Interiors", slug: "interiors", icon: "🏠" },
+    { name: "Race Tracks", slug: "race", icon: "🏁" },
+    { name: "Add-on Maps", slug: "addon", icon: "🗺️" },
+    { name: "Misc Maps", slug: "misc", icon: "📍" },
+  ];
+
+  const clothing = [
+    { name: "Male Clothing", slug: "male", icon: "👨" },
+    { name: "Female Clothing", slug: "female", icon: "👩" },
+    { name: "Uniforms", slug: "uniforms", icon: "👔" },
+    { name: "EUP Packs", slug: "eup", icon: "🎭" },
+  ];
+
+  const serverAds = [
+    { name: "Free Server Ads", slug: "free", icon: "🎁" },
+    { name: "Paid Server Promotion", slug: "paid", icon: "⭐" },
+    { name: "Partners", slug: "partners", icon: "🤝" },
+  ];
 
   if (loading) {
     return (
@@ -100,15 +116,15 @@ export default function CategoriesPage() {
         </div>
 
         {/* Scripts Section */}
-        {categories.scripts.length > 0 && (
-          <div className="mb-16">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="text-3xl">📜</div>
-              <h2 className="text-2xl font-bold">Scripts</h2>
-              <span className="text-sm text-gray-400">({categories.scripts.length} categories)</span>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {categories.scripts.map((cat) => (
+        <div className="mb-16">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="text-3xl">📜</div>
+            <h2 className="text-2xl font-bold">Scripts</h2>
+            <span className="text-sm text-gray-400">({scripts.length} categories)</span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {scripts.length > 0 ? (
+              scripts.map((cat) => (
                 <Link
                   key={cat.name}
                   href={`/downloads/scripts/${cat.name}`}
@@ -118,25 +134,29 @@ export default function CategoriesPage() {
                     <div className="text-3xl">{scriptIcons[cat.name] || "📜"}</div>
                     <div>
                       <h3 className="font-semibold capitalize group-hover:text-indigo-400 transition">{cat.name}</h3>
-                      <p className="text-xs text-gray-400">{cat.count} item{cat.count !== 1 ? 's' : ''}</p>
+                      <p className="text-xs text-gray-400">{cat.count} items</p>
                     </div>
                   </div>
                 </Link>
-              ))}
-            </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-gray-400">
+                No scripts yet. Be the first to submit!
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Vehicles Section */}
-        {categories.vehicles.length > 0 && (
-          <div className="mb-16">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="text-3xl">🚗</div>
-              <h2 className="text-2xl font-bold">Vehicles</h2>
-              <span className="text-sm text-gray-400">({categories.vehicles.length} brands)</span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-              {categories.vehicles.map((brand) => (
+        <div className="mb-16">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="text-3xl">🚗</div>
+            <h2 className="text-2xl font-bold">Vehicles</h2>
+            <span className="text-sm text-gray-400">({vehicles.length} brands)</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {vehicles.length > 0 ? (
+              vehicles.map((brand) => (
                 <Link
                   key={brand.name}
                   href={`/downloads/cars/${brand.name}`}
@@ -144,22 +164,97 @@ export default function CategoriesPage() {
                 >
                   <div className="text-2xl mb-1">🚗</div>
                   <span className="text-sm capitalize group-hover:text-indigo-400 transition">{brand.name}</span>
-                  <p className="text-xs text-gray-500 mt-1">{brand.count} car{brand.count !== 1 ? 's' : ''}</p>
+                  <p className="text-xs text-gray-500 mt-1">{brand.count} cars</p>
                 </Link>
-              ))}
-            </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-gray-400">
+                No vehicles yet. Be the first to submit!
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Guns Section */}
+        <div className="mb-16">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="text-3xl">🔫</div>
+            <h2 className="text-2xl font-bold">Guns & Weapons</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {guns.map((cat) => (
+              <Link
+                key={cat.slug}
+                href={`/downloads/guns/${cat.slug}`}
+                className="group rounded-xl border border-gray-800 bg-zinc-900/50 p-4 transition hover:border-indigo-500 hover:bg-zinc-900"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl">{cat.icon}</div>
+                  <div>
+                    <h3 className="font-semibold group-hover:text-indigo-400 transition">{cat.name}</h3>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Peds Section */}
+        <div className="mb-16">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="text-3xl">👥</div>
+            <h2 className="text-2xl font-bold">Peds & Characters</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {peds.map((cat) => (
+              <Link
+                key={cat.slug}
+                href={`/downloads/peds/${cat.slug}`}
+                className="group rounded-xl border border-gray-800 bg-zinc-900/50 p-4 transition hover:border-indigo-500 hover:bg-zinc-900"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl">{cat.icon}</div>
+                  <div>
+                    <h3 className="font-semibold group-hover:text-indigo-400 transition">{cat.name}</h3>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Maps Section */}
+        <div className="mb-16">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="text-3xl">🗺️</div>
+            <h2 className="text-2xl font-bold">Maps & MLOs</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {maps.map((cat) => (
+              <Link
+                key={cat.slug}
+                href={`/downloads/maps/${cat.slug}`}
+                className="group rounded-xl border border-gray-800 bg-zinc-900/50 p-4 transition hover:border-indigo-500 hover:bg-zinc-900"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl">{cat.icon}</div>
+                  <div>
+                    <h3 className="font-semibold group-hover:text-indigo-400 transition">{cat.name}</h3>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
 
         {/* Clothing Section */}
         <div className="mb-16">
           <div className="flex items-center gap-3 mb-6">
             <div className="text-3xl">👕</div>
             <h2 className="text-2xl font-bold">Clothing</h2>
-            <span className="text-sm text-gray-400">Peds & EUP</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-            {categories.clothing.map((cat) => (
+            {clothing.map((cat) => (
               <Link
                 key={cat.slug}
                 href={`/downloads/clothing/${cat.slug}`}
@@ -167,7 +262,6 @@ export default function CategoriesPage() {
               >
                 <div className="text-5xl mb-3 group-hover:scale-110 transition">{cat.icon}</div>
                 <h3 className="font-semibold">{cat.name}</h3>
-                <p className="text-xs text-gray-400 mt-1">{cat.count} items</p>
               </Link>
             ))}
           </div>
@@ -178,10 +272,9 @@ export default function CategoriesPage() {
           <div className="flex items-center gap-3 mb-6">
             <div className="text-3xl">📢</div>
             <h2 className="text-2xl font-bold">Server Ads</h2>
-            <span className="text-sm text-gray-400">Promote your server</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
-            {categories.serverAds.map((cat) => (
+            {serverAds.map((cat) => (
               <Link
                 key={cat.slug}
                 href={`/downloads/server-ads/${cat.slug}`}
@@ -189,23 +282,10 @@ export default function CategoriesPage() {
               >
                 <div className="text-6xl mb-4 group-hover:scale-110 transition">{cat.icon}</div>
                 <h3 className="font-semibold text-lg">{cat.name}</h3>
-                <p className="text-xs text-gray-400 mt-2">{cat.description}</p>
               </Link>
             ))}
           </div>
         </div>
-
-        {/* Show message if no content yet */}
-        {categories.scripts.length === 0 && categories.vehicles.length === 0 && (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">📦</div>
-            <h3 className="text-xl font-semibold mb-2">No content yet</h3>
-            <p className="text-gray-400">Be the first to submit content!</p>
-            <Link href="/submit" className="inline-block mt-4 px-6 py-2 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600">
-              Submit Content →
-            </Link>
-          </div>
-        )}
       </section>
     </main>
   );

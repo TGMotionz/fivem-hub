@@ -22,7 +22,6 @@ export default function Header() {
         const adminEmails = ["kjek98@gmail.com", "your-email@gmail.com", "admin@example.com"];
         setIsAdmin(adminEmails.includes(user.email));
         
-        // Update last active in public_users
         const { data: existing } = await supabase
           .from("public_users")
           .select("id")
@@ -65,12 +64,10 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-lg border-b border-gray-800">
       <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-4 p-4">
-        {/* Logo */}
         <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent hover:opacity-80 transition">
           FiveM Free Hub
         </Link>
 
-        {/* Search Bar */}
         <form onSubmit={handleSearch} className="flex-1 max-w-md">
           <div className="relative">
             <input
@@ -86,7 +83,6 @@ export default function Header() {
           </div>
         </form>
 
-        {/* Navigation Links */}
         <div className="flex items-center gap-3 flex-wrap">
           <Link href="/downloads" className="rounded-xl border border-gray-700 px-4 py-2 text-sm hover:bg-white/10 transition">
             Downloads
@@ -107,17 +103,14 @@ export default function Header() {
             🏆 Leaderboard
           </Link>
           
-          {/* Submit Button */}
           {user && (
             <Link href="/submit" className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 text-sm font-semibold hover:scale-105 transition">
               ✨ Submit
             </Link>
           )}
           
-          {/* Notifications Bell */}
           {user && <Notifications />}
           
-          {/* User Profile Dropdown */}
           {user ? (
             <div className="relative">
               <button
@@ -163,7 +156,6 @@ export default function Header() {
                     <span>✨</span> Submit Content
                   </Link>
                   
-                  {/* Admin Section - Only visible to admins */}
                   {isAdmin && (
                     <>
                       <div className="border-t border-gray-800 my-1"></div>
@@ -214,7 +206,6 @@ export default function Header() {
             </Link>
           )}
 
-          {/* Discord Button */}
           <a href="https://discord.gg/qf367wWS" target="_blank" rel="noreferrer" className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-5 py-2 font-semibold text-sm hover:scale-105 transition">
             💬 Discord
           </a>

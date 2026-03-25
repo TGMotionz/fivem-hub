@@ -187,6 +187,13 @@ export default function Header() {
                       >
                         <span>🚨</span> Reports
                       </Link>
+                      <Link
+                        href="/admin/ads"
+                        onClick={() => setShowDropdown(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-blue-400 hover:bg-white/10 transition"
+                      >
+                        <span>📢</span> Advertising
+                      </Link>
                     </>
                   )}
                   

@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Header from "@/components/Header";
 import NewsletterSignup from "@/components/NewsletterSignup";
+import AdGrid from "@/components/AdGrid";
+import OnlineUsers from "@/components/OnlineUsers";
 
 export default function HomePage() {
   const [popularVehicles, setPopularVehicles] = useState([]);
@@ -100,6 +102,15 @@ export default function HomePage() {
             </a>
           </div>
         </div>
+      </section>
+
+      {/* Sponsored Ads Section */}
+      <section className="mx-auto max-w-7xl px-6 py-8">
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold">📢 Sponsored Content</h3>
+          <p className="text-sm text-gray-400">Support our community partners</p>
+        </div>
+        <AdGrid />
       </section>
 
       {/* Featured Content Section */}
@@ -324,6 +335,11 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-gray-800 py-12 mt-16">
         <div className="mx-auto max-w-7xl px-6">
+          {/* Online Users Counter */}
+          <div className="mb-8 max-w-md mx-auto">
+            <OnlineUsers />
+          </div>
+          
           <div className="mb-8 max-w-md mx-auto">
             <NewsletterSignup />
           </div>

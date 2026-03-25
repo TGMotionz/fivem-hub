@@ -5,32 +5,33 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 export default function AdGrid() {
-  const [ads, setAds] = useState({});
+  const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadAds() {
-      const { data } = await supabase
+      // Get all active ads (end_date is either null OR not expired)
+      const { data, error } = await supabase
         .from("ads")
         .select("*")
         .eq("is_active", true)
-        .gte("end_date", new Date().toISOString())
+        .or("end_date.is.null,end_date.gt." + new Date().toISOString())
         .order("slot", { ascending: true });
       
-      const adsBySlot = {};
-      data?.forEach(ad => {
-        adsBySlot[ad.slot] = ad;
-      });
-      
-      setAds(adsBySlot);
+      if (!error && data) {
+        setAds(data);
+        
+        // Track impressions for each ad
+        data.forEach(async (ad) => {
+          await supabase
+            .from("ads")
+            .update({ impressions: (ad.impressions || 0) + 1 })
+            .eq("id", ad.id);
+        });
+      } else {
+        console.error("Error loading ads:", error);
+      }
       setLoading(false);
-      
-      data?.forEach(async (ad) => {
-        await supabase
-          .from("ads")
-          .update({ impressions: (ad.impressions || 0) + 1 })
-          .eq("id", ad.id);
-      });
     }
     
     loadAds();
@@ -44,12 +45,30 @@ export default function AdGrid() {
     window.open(ad.link_url, "_blank");
   }
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-12">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-xl border border-gray-800 bg-zinc-900/30 p-6 animate-pulse">
+            <div className="h-48 bg-gray-800 rounded-xl mb-4"></div>
+            <div className="h-4 bg-gray-800 rounded w-3/4 mb-2"></div>
+            <div className="h-3 bg-gray-800 rounded w-1/2"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Create an array of 4 slots, filling with ads where available
+  const slots = [1, 2, 3, 4].map(slot => {
+    const ad = ads.find(a => a.slot === slot);
+    return { slot, ad };
+  });
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-12">
-      {[1, 2, 3, 4].map((slot) => {
-        const ad = ads[slot];
+      {slots.map(({ slot, ad }) => {
+        // If no ad for this slot, show placeholder
         if (!ad) {
           return (
             <Link
@@ -67,6 +86,7 @@ export default function AdGrid() {
           );
         }
         
+        // Show the real ad
         return (
           <div
             key={slot}
@@ -78,9 +98,12 @@ export default function AdGrid() {
                 src={ad.image_url}
                 alt={ad.title}
                 className="w-full h-48 object-cover"
+                onError={(e) => {
+                  e.target.src = 'https://placehold.co/400x250/1f2937/6366f1?text=Ad+Image';
+                }}
               />
               <div className="absolute top-2 right-2 bg-black/70 text-xs text-gray-400 px-2 py-1 rounded">
-                Ad
+                Sponsored
               </div>
             </div>
             <div className="p-4">

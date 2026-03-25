@@ -9,6 +9,8 @@ export default function AdsAdminPage() {
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAd, setEditingAd] = useState(null);
   const [message, setMessage] = useState("");
   const [formData, setFormData] = useState({
     title: "",
@@ -59,17 +61,40 @@ export default function AdsAdminPage() {
     } else {
       setMessage("✅ Ad added successfully!");
       setShowAddModal(false);
-      setFormData({
-        title: "",
-        description: "",
-        image_url: "",
-        link_url: "",
-        slot: 1,
-        advertiser_name: "",
-        advertiser_website: "",
-        end_date: "",
-        is_active: true,
-      });
+      resetForm();
+      loadAds();
+    }
+    
+    setLoading(false);
+    setTimeout(() => setMessage(""), 3000);
+  }
+
+  async function handleUpdateAd(e) {
+    e.preventDefault();
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from("ads")
+      .update({
+        title: formData.title,
+        description: formData.description,
+        image_url: formData.image_url,
+        link_url: formData.link_url,
+        slot: formData.slot,
+        advertiser_name: formData.advertiser_name,
+        advertiser_website: formData.advertiser_website,
+        end_date: formData.end_date || null,
+        is_active: formData.is_active,
+      })
+      .eq("id", editingAd.id);
+    
+    if (error) {
+      setMessage(`❌ Error: ${error.message}`);
+    } else {
+      setMessage("✅ Ad updated successfully!");
+      setShowEditModal(false);
+      setEditingAd(null);
+      resetForm();
       loadAds();
     }
     
@@ -97,6 +122,36 @@ export default function AdsAdminPage() {
     if (!error) loadAds();
   }
 
+  function editAd(ad) {
+    setEditingAd(ad);
+    setFormData({
+      title: ad.title || "",
+      description: ad.description || "",
+      image_url: ad.image_url || "",
+      link_url: ad.link_url || "",
+      slot: ad.slot || 1,
+      advertiser_name: ad.advertiser_name || "",
+      advertiser_website: ad.advertiser_website || "",
+      end_date: ad.end_date ? ad.end_date.split('T')[0] : "",
+      is_active: ad.is_active,
+    });
+    setShowEditModal(true);
+  }
+
+  function resetForm() {
+    setFormData({
+      title: "",
+      description: "",
+      image_url: "",
+      link_url: "",
+      slot: 1,
+      advertiser_name: "",
+      advertiser_website: "",
+      end_date: "",
+      is_active: true,
+    });
+  }
+
   const slotColors = {
     1: "border-indigo-500",
     2: "border-purple-500",
@@ -105,10 +160,10 @@ export default function AdsAdminPage() {
   };
 
   const slotLabels = {
-    1: "🥇 Premium Slot",
-    2: "🥈 Featured Slot",
-    3: "🥉 Standard Slot",
-    4: "📌 Basic Slot",
+    1: "🥇 Premium Slot (Top Left)",
+    2: "🥈 Featured Slot (Top Right)",
+    3: "🥉 Standard Slot (Bottom Left)",
+    4: "📌 Basic Slot (Bottom Right)",
   };
 
   return (
@@ -148,6 +203,7 @@ export default function AdsAdminPage() {
                       <p className="text-sm text-green-400 mb-1">✓ Occupied</p>
                       <p className="text-xs text-gray-400 truncate">{ad.title}</p>
                       <p className="text-xs text-gray-500">Clicks: {ad.clicks || 0} | Impressions: {ad.impressions || 0}</p>
+                      <p className="text-xs text-gray-500">{ad.is_active ? "🟢 Active" : "🔴 Inactive"}</p>
                     </>
                   ) : (
                     <>
@@ -174,31 +230,39 @@ export default function AdsAdminPage() {
               <div key={ad.id} className={`rounded-xl border-l-4 ${slotColors[ad.slot] || "border-indigo-500"} bg-zinc-900/30 p-4`}>
                 <div className="flex gap-4">
                   <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
-                    <img src={ad.image_url} alt={ad.title} className="w-full h-full object-cover" />
+                    <img src={ad.image_url} alt={ad.title} className="w-full h-full object-cover" onError={(e) => { e.target.src = 'https://placehold.co/300x200/1f2937/6366f1?text=No+Image'; }} />
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="text-lg font-bold">{ad.title}</h3>
-                        <p className="text-sm text-gray-400 mt-1">{ad.description}</p>
+                        <p className="text-sm text-gray-400 mt-1">{ad.description || "No description"}</p>
                         <div className="flex flex-wrap gap-3 mt-2 text-xs text-gray-500">
                           <span>Slot {ad.slot} - {slotLabels[ad.slot]}</span>
                           <span>📊 Clicks: {ad.clicks || 0}</span>
                           <span>👁️ Impressions: {ad.impressions || 0}</span>
                           {ad.advertiser_name && <span>🏢 {ad.advertiser_name}</span>}
                           {ad.end_date && <span>📅 Ends: {new Date(ad.end_date).toLocaleDateString()}</span>}
+                          {!ad.end_date && <span>📅 No expiration</span>}
+                          <span>{ad.is_active ? "🟢 Active" : "🔴 Inactive"}</span>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <button
+                          onClick={() => editAd(ad)}
+                          className="px-3 py-1.5 text-sm rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                        >
+                          Edit
+                        </button>
+                        <button
                           onClick={() => toggleAdStatus(ad.id, ad.is_active)}
                           className={`px-3 py-1.5 text-sm rounded-lg ${
                             ad.is_active 
-                              ? "bg-green-500/20 text-green-400 hover:bg-green-500/30" 
-                              : "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30"
+                              ? "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30" 
+                              : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
                           }`}
                         >
-                          {ad.is_active ? "Active ✓" : "Inactive"}
+                          {ad.is_active ? "Deactivate" : "Activate"}
                         </button>
                         <button
                           onClick={() => deleteAd(ad.id)}
@@ -271,7 +335,7 @@ export default function AdsAdminPage() {
                   className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">Recommended size: 300x200px</p>
+                <p className="text-xs text-gray-500 mt-1">Recommended size: 400x250px</p>
               </div>
               
               <div>
@@ -317,14 +381,137 @@ export default function AdsAdminPage() {
                   onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                   className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
                 />
+                <p className="text-xs text-gray-500 mt-1">Leave empty for no expiration</p>
               </div>
               
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 rounded-lg bg-indigo-500 text-white font-semibold hover:bg-indigo-600"
+                className="w-full py-2 rounded-lg bg-indigo-500 text-white font-semibold hover:bg-indigo-600 disabled:opacity-50"
               >
                 {loading ? "Adding..." : "Add Ad"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Ad Modal */}
+      {showEditModal && editingAd && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 rounded-2xl border border-gray-700 max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Edit Ad</h2>
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            
+            <form onSubmit={handleUpdateAd} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-1">Ad Slot *</label>
+                <select
+                  value={formData.slot}
+                  onChange={(e) => setFormData({ ...formData, slot: parseInt(e.target.value) })}
+                  className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
+                >
+                  <option value={1}>Slot 1 - 🥇 Premium (Top Left)</option>
+                  <option value={2}>Slot 2 - 🥈 Featured (Top Right)</option>
+                  <option value={3}>Slot 3 - 🥉 Standard (Bottom Left)</option>
+                  <option value={4}>Slot 4 - 📌 Basic (Bottom Right)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold mb-1">Title *</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold mb-1">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={2}
+                  className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold mb-1">Image URL *</label>
+                <input
+                  type="url"
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold mb-1">Link URL *</label>
+                <input
+                  type="url"
+                  value={formData.link_url}
+                  onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
+                  className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
+                  required
+                />
+              </div>
+              
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Advertiser Name</label>
+                  <input
+                    type="text"
+                    value={formData.advertiser_name}
+                    onChange={(e) => setFormData({ ...formData, advertiser_name: e.target.value })}
+                    className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-1">Advertiser Website</label>
+                  <input
+                    type="url"
+                    value={formData.advertiser_website}
+                    onChange={(e) => setFormData({ ...formData, advertiser_website: e.target.value })}
+                    className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold mb-1">End Date (optional)</label>
+                <input
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold mb-1">Status</label>
+                <select
+                  value={formData.is_active}
+                  onChange={(e) => setFormData({ ...formData, is_active: e.target.value === "true" })}
+                  className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2 rounded-lg bg-indigo-500 text-white font-semibold hover:bg-indigo-600 disabled:opacity-50"
+              >
+                {loading ? "Saving..." : "Save Changes"}
               </button>
             </form>
           </div>

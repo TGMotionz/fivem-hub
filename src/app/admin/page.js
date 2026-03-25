@@ -15,6 +15,8 @@ export default function AdminPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [imageUrls, setImageUrls] = useState([]);
+  const [newImageUrl, setNewImageUrl] = useState("");
   const [formData, setFormData] = useState({
     type: "vehicle",
     name: "",
@@ -24,6 +26,7 @@ export default function AdminPage() {
     version: "v1.0.0",
     download_url: "",
     image_url: "",
+    images: [],
     features: [],
     install_steps: [],
   });
@@ -124,6 +127,7 @@ export default function AdminPage() {
         version: formData.version,
         download_url: formData.download_url,
         image_url: formData.image_url,
+        images: imageUrls,
         features: formData.features,
         install_steps: formData.install_steps,
         views: 0,
@@ -136,23 +140,7 @@ export default function AdminPage() {
     } else {
       setMessage(`✅ Added "${formData.name}" successfully!`);
       setShowAddModal(false);
-      setFormData({
-        type: activeTab === "vehicles" ? "vehicle" :
-               activeTab === "scripts" ? "script" :
-               activeTab === "guns" ? "gun" :
-               activeTab === "peds" ? "ped" :
-               activeTab === "maps" ? "map" :
-               activeTab === "clothing" ? "clothing" : "server_ad",
-        name: "",
-        category: "",
-        slug: "",
-        description: "",
-        version: "v1.0.0",
-        download_url: "",
-        image_url: "",
-        features: [],
-        install_steps: [],
-      });
+      resetForm();
       await loadContent();
     }
     
@@ -171,9 +159,11 @@ export default function AdminPage() {
       version: item.version || "v1.0.0",
       download_url: item.download_url || "",
       image_url: item.image_url || "",
+      images: item.images || [],
       features: item.features || [],
       install_steps: item.install_steps || [],
     });
+    setImageUrls(item.images || []);
     setShowEditModal(true);
   }
 
@@ -191,6 +181,7 @@ export default function AdminPage() {
         version: formData.version,
         download_url: formData.download_url,
         image_url: formData.image_url,
+        images: imageUrls,
         features: formData.features,
         install_steps: formData.install_steps,
         updated_at: new Date(),
@@ -204,10 +195,44 @@ export default function AdminPage() {
       await loadContent();
       setShowEditModal(false);
       setEditingItem(null);
+      resetForm();
     }
     
     setLoading(false);
     setTimeout(() => setMessage(""), 3000);
+  }
+
+  function resetForm() {
+    setFormData({
+      type: "vehicle",
+      name: "",
+      category: "",
+      slug: "",
+      description: "",
+      version: "v1.0.0",
+      download_url: "",
+      image_url: "",
+      images: [],
+      features: [],
+      install_steps: [],
+    });
+    setImageUrls([]);
+    setNewImageUrl("");
+    setFeatureInput("");
+    setStepInput("");
+  }
+
+  function addImage() {
+    if (newImageUrl.trim()) {
+      setImageUrls([...imageUrls, newImageUrl.trim()]);
+      setNewImageUrl("");
+    }
+  }
+
+  function removeImage(index) {
+    const newImages = [...imageUrls];
+    newImages.splice(index, 1);
+    setImageUrls(newImages);
   }
 
   function addFeature() {
@@ -236,48 +261,26 @@ export default function AdminPage() {
     setFormData({ ...formData, install_steps: newSteps });
   }
 
-  if (!user) {
+  if (!user || !isAdmin) {
     return (
       <main className="min-h-screen bg-black text-white">
         <Header />
         <div className="text-center py-20">
-          <p className="text-red-400">Please log in</p>
-          <Link href="/login" className="mt-4 inline-block text-indigo-400">Go to Login</Link>
-        </div>
-      </main>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <main className="min-h-screen bg-black text-white">
-        <Header />
-        <div className="text-center py-20">
-          <p className="text-red-400">You don't have permission to access this page.</p>
+          <p className="text-red-400">Access Denied</p>
           <Link href="/" className="mt-4 inline-block text-indigo-400">Go Home</Link>
         </div>
       </main>
     );
   }
 
-  const tabStats = {
-    vehicles: items.filter(i => i.type === "vehicle").length,
-    scripts: items.filter(i => i.type === "script").length,
-    guns: items.filter(i => i.type === "gun").length,
-    peds: items.filter(i => i.type === "ped").length,
-    maps: items.filter(i => i.type === "map").length,
-    clothing: items.filter(i => i.type === "clothing").length,
-    "server-ads": items.filter(i => i.type === "server_ad").length,
-  };
-
   const tabs = [
-    { id: "vehicles", label: "🚗 Vehicles", count: tabStats.vehicles },
-    { id: "scripts", label: "📜 Scripts", count: tabStats.scripts },
-    { id: "guns", label: "🔫 Guns", count: tabStats.guns },
-    { id: "peds", label: "👥 Peds", count: tabStats.peds },
-    { id: "maps", label: "🗺️ Maps", count: tabStats.maps },
-    { id: "clothing", label: "👕 Clothing", count: tabStats.clothing },
-    { id: "server-ads", label: "📢 Server Ads", count: tabStats["server-ads"] },
+    { id: "vehicles", label: "🚗 Vehicles" },
+    { id: "scripts", label: "📜 Scripts" },
+    { id: "guns", label: "🔫 Guns" },
+    { id: "peds", label: "👥 Peds" },
+    { id: "maps", label: "🗺️ Maps" },
+    { id: "clothing", label: "👕 Clothing" },
+    { id: "server-ads", label: "📢 Server Ads" },
   ];
 
   return (
@@ -290,17 +293,12 @@ export default function AdminPage() {
             <h1 className="text-4xl font-bold">Content Manager</h1>
             <p className="text-gray-400 mt-2">Manage, edit, and feature your content</p>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:scale-105 transition"
-            >
-              + Add New Content
-            </button>
-            <Link href="/admin/submissions" className="rounded-xl bg-yellow-500/20 border border-yellow-500 px-4 py-2 text-sm text-yellow-400 hover:bg-yellow-500/30 transition">
-              📝 Review Submissions
-            </Link>
-          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:scale-105 transition"
+          >
+            + Add New Content
+          </button>
         </div>
         
         {message && (
@@ -321,7 +319,14 @@ export default function AdminPage() {
                   : "text-gray-400 hover:text-white"
               }`}
             >
-              {tab.label} ({tab.count})
+              {tab.label} ({items.filter(i => 
+                tab.id === "vehicles" ? i.type === "vehicle" :
+                tab.id === "scripts" ? i.type === "script" :
+                tab.id === "guns" ? i.type === "gun" :
+                tab.id === "peds" ? i.type === "ped" :
+                tab.id === "maps" ? i.type === "map" :
+                tab.id === "clothing" ? i.type === "clothing" : i.type === "server_ad"
+              ).length})
             </button>
           ))}
         </div>
@@ -342,9 +347,24 @@ export default function AdminPage() {
             {items.map((item) => (
               <div key={item.id} className="rounded-xl border border-gray-800 bg-zinc-900/30 p-4 hover:bg-zinc-900/50 transition">
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
-                  {item.image_url && (
+                  {item.images && item.images.length > 0 ? (
+                    <div className="flex gap-1">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
+                        <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
+                      </div>
+                      {item.images.length > 1 && (
+                        <div className="w-16 h-16 rounded-lg bg-gray-800 flex items-center justify-center text-xs text-gray-400">
+                          +{item.images.length - 1}
+                        </div>
+                      )}
+                    </div>
+                  ) : item.image_url ? (
                     <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
                       <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-gray-800 flex items-center justify-center text-2xl">
+                      {item.type === "vehicle" ? "🚗" : item.type === "script" ? "📜" : "📦"}
                     </div>
                   )}
                   
@@ -361,6 +381,7 @@ export default function AdminPage() {
                     <div className="flex gap-4 mt-2 text-xs text-gray-500">
                       <span>👁️ {item.views || 0}</span>
                       <span>⬇️ {item.downloads || 0}</span>
+                      <span>📷 {item.images?.length || 0} images</span>
                       <span>📅 {new Date(item.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
@@ -403,7 +424,7 @@ export default function AdminPage() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Add New Content</h2>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+                <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white">✕</button>
               </div>
               
               <form onSubmit={handleAddContent} className="space-y-4">
@@ -425,7 +446,7 @@ export default function AdminPage() {
                       type="text"
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value.toLowerCase() })}
-                      placeholder="e.g., dodge, inventory, pistols, civilian"
+                      placeholder="e.g., dodge, inventory, pistols"
                       className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
                       required
                     />
@@ -462,7 +483,7 @@ export default function AdminPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1">Image URL</label>
+                    <label className="block text-sm font-semibold mb-1">Main Image URL</label>
                     <input
                       type="url"
                       value={formData.image_url}
@@ -470,6 +491,40 @@ export default function AdminPage() {
                       className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
                     />
                   </div>
+                </div>
+                
+                {/* Multiple Images Section */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Additional Images (Gallery)</label>
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="url"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="flex-1 rounded-lg border border-gray-700 bg-black px-4 py-2 text-white text-sm"
+                    />
+                    <button type="button" onClick={addImage} className="px-4 py-2 rounded-lg bg-indigo-500 text-white">
+                      Add
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 mt-2">
+                    {imageUrls.map((url, i) => (
+                      <div key={i} className="relative group">
+                        <div className="h-20 rounded-lg overflow-hidden bg-gray-800">
+                          <img src={url} alt={`Image ${i+1}`} className="w-full h-full object-cover" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{imageUrls.length} images in gallery</p>
                 </div>
                 
                 {/* Features */}
@@ -521,14 +576,13 @@ export default function AdminPage() {
                   </div>
                 </div>
                 
-                <div className="flex gap-3 pt-4">
-                  <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg bg-indigo-500 text-white font-semibold hover:bg-indigo-600">
-                    {loading ? "Adding..." : "Add Content"}
-                  </button>
-                  <button type="button" onClick={() => setShowAddModal(false)} className="px-6 py-2 rounded-lg border border-gray-700 hover:bg-white/10">
-                    Cancel
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2 rounded-lg bg-indigo-500 text-white font-semibold hover:bg-indigo-600 disabled:opacity-50"
+                >
+                  {loading ? "Adding..." : "Add Content"}
+                </button>
               </form>
             </div>
           </div>
@@ -542,7 +596,7 @@ export default function AdminPage() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Edit Content</h2>
-                <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-white text-2xl">✕</button>
+                <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-white">✕</button>
               </div>
               
               <form onSubmit={handleUpdate} className="space-y-4">
@@ -610,13 +664,47 @@ export default function AdminPage() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Image URL</label>
+                  <label className="block text-sm font-semibold mb-1">Main Image URL</label>
                   <input
                     type="url"
                     value={formData.image_url}
                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                     className="w-full rounded-lg border border-gray-700 bg-black px-4 py-2 text-white"
                   />
+                </div>
+                
+                {/* Multiple Images Section */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Additional Images (Gallery)</label>
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="url"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="flex-1 rounded-lg border border-gray-700 bg-black px-4 py-2 text-white text-sm"
+                    />
+                    <button type="button" onClick={addImage} className="px-4 py-2 rounded-lg bg-indigo-500 text-white">
+                      Add
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 mt-2">
+                    {imageUrls.map((url, i) => (
+                      <div key={i} className="relative group">
+                        <div className="h-20 rounded-lg overflow-hidden bg-gray-800">
+                          <img src={url} alt={`Image ${i+1}`} className="w-full h-full object-cover" />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">{imageUrls.length} images in gallery</p>
                 </div>
                 
                 {/* Features */}
@@ -668,14 +756,13 @@ export default function AdminPage() {
                   </div>
                 </div>
                 
-                <div className="flex gap-3 pt-4">
-                  <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg bg-indigo-500 text-white font-semibold hover:bg-indigo-600">
-                    {loading ? "Saving..." : "Save Changes"}
-                  </button>
-                  <button type="button" onClick={() => setShowEditModal(false)} className="px-6 py-2 rounded-lg border border-gray-700 hover:bg-white/10">
-                    Cancel
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2 rounded-lg bg-indigo-500 text-white font-semibold hover:bg-indigo-600 disabled:opacity-50"
+                >
+                  {loading ? "Saving..." : "Save Changes"}
+                </button>
               </form>
             </div>
           </div>

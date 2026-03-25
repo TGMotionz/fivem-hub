@@ -12,6 +12,8 @@ export default function SubmitPage() {
   const [message, setMessage] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUrls, setImageUrls] = useState([]);
+  const [newImageUrl, setNewImageUrl] = useState("");
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
   const [formData, setFormData] = useState({
@@ -114,6 +116,19 @@ export default function SubmitPage() {
     }
   }
 
+  function addImage() {
+    if (newImageUrl.trim()) {
+      setImageUrls([...imageUrls, newImageUrl.trim()]);
+      setNewImageUrl("");
+    }
+  }
+
+  function removeImage(index) {
+    const newImages = [...imageUrls];
+    newImages.splice(index, 1);
+    setImageUrls(newImages);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
@@ -150,6 +165,7 @@ export default function SubmitPage() {
         version: formData.version,
         download_url: formData.download_url,
         image_url: formData.image_url || imagePreview,
+        images: imageUrls,
         features: formData.features,
         install_steps: formData.install_steps,
         status: "pending",
@@ -174,6 +190,7 @@ export default function SubmitPage() {
       install_steps: [],
     });
     setImagePreview(null);
+    setImageUrls([]);
     setFeatureInput("");
     setStepInput("");
     setLoading(false);
@@ -249,7 +266,7 @@ export default function SubmitPage() {
               </div>
             </div>
 
-            {/* Category - Scrollable Dropdown */}
+            {/* Category Dropdown */}
             <div>
               <label className="block text-sm font-semibold mb-2">Category *</label>
               <div className="relative">
@@ -359,7 +376,7 @@ export default function SubmitPage() {
               <p className="text-xs text-gray-500 mt-1">Google Drive, MediaFire, or direct link</p>
             </div>
 
-            {/* Image Upload */}
+            {/* Main Image Upload */}
             <div>
               <label className="block text-sm font-semibold mb-2">Preview Image *</label>
               <div className="flex flex-col gap-4">
@@ -390,6 +407,40 @@ export default function SubmitPage() {
                   <p className="text-sm text-yellow-400">Uploading image...</p>
                 )}
               </div>
+            </div>
+
+            {/* Additional Images */}
+            <div>
+              <label className="block text-sm font-semibold mb-2">Additional Images (Gallery)</label>
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="url"
+                  value={newImageUrl}
+                  onChange={(e) => setNewImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  className="flex-1 rounded-xl border border-gray-700 bg-black/50 px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button type="button" onClick={addImage} className="px-4 py-2 rounded-xl bg-indigo-500 text-white hover:bg-indigo-600">
+                  Add
+                </button>
+              </div>
+              <div className="grid grid-cols-4 gap-2 mt-2">
+                {imageUrls.map((url, i) => (
+                  <div key={i} className="relative group">
+                    <div className="h-20 rounded-lg overflow-hidden bg-gray-800">
+                      <img src={url} alt={`Image ${i+1}`} className="w-full h-full object-cover" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">{imageUrls.length} additional images</p>
             </div>
 
             {/* Features */}

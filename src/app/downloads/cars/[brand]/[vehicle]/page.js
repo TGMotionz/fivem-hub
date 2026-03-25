@@ -8,6 +8,12 @@ import Header from "@/components/Header";
 import Comments from "@/components/Comments";
 import ShareButtons from "@/components/ShareButtons";
 
+const brandNames = {
+  dodge: "Dodge", ferrari: "Ferrari", bmw: "BMW", tesla: "Tesla",
+  audi: "Audi", mercedes: "Mercedes", porsche: "Porsche",
+  lamborghini: "Lamborghini", ford: "Ford", chevrolet: "Chevrolet",
+};
+
 function getPlatformIcon(url) {
   if (!url) return null;
   if (url.includes("drive.google.com")) return "📁 Google Drive";
@@ -80,6 +86,7 @@ export default function VehicleDetailPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     async function loadParams() {
@@ -117,6 +124,7 @@ export default function VehicleDetailPage({ params }) {
       }
       
       setContent(data);
+      setSelectedImage(data.image_url);
       setLoading(false);
       trackView(vehicle, userId);
     }
@@ -124,17 +132,14 @@ export default function VehicleDetailPage({ params }) {
     if (vehicle) loadContent();
   }, [vehicle, userId]);
 
-  const brandNames = {
-    dodge: "Dodge",
-    ferrari: "Ferrari",
-    bmw: "BMW",
-    tesla: "Tesla",
-    audi: "Audi",
-    mercedes: "Mercedes",
-    porsche: "Porsche",
+  const getBrandName = () => {
+    if (!brand) return "";
+    const names = {
+      dodge: "Dodge", ferrari: "Ferrari", bmw: "BMW", tesla: "Tesla",
+      audi: "Audi", mercedes: "Mercedes", porsche: "Porsche",
+    };
+    return names[brand] || brand.charAt(0).toUpperCase() + brand.slice(1);
   };
-
-  const displayBrand = brandNames[brand] || (brand ? brand.charAt(0).toUpperCase() + brand.slice(1) : "");
 
   if (loading) {
     return (
@@ -164,7 +169,11 @@ export default function VehicleDetailPage({ params }) {
     );
   }
 
+  const brandName = getBrandName();
   const platform = getPlatformIcon(content.download_url);
+  
+  // Get all images for gallery
+  const allImages = [content.image_url, ...(content.images || [])].filter(Boolean);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-white">
@@ -172,18 +181,38 @@ export default function VehicleDetailPage({ params }) {
 
       <section className="mx-auto max-w-7xl px-6 py-12">
         <div className="grid gap-10 lg:grid-cols-2">
+          {/* Image Gallery Section */}
           <div className="rounded-2xl border border-gray-800 bg-zinc-900/50 p-4">
-            <div className="flex h-[320px] items-center justify-center rounded-xl bg-gray-800 overflow-hidden">
-              {content.image_url ? (
-                <img src={content.image_url} alt={content.name} className="w-full h-full object-cover" />
+            {/* Main Image */}
+            <div className="flex h-[320px] items-center justify-center rounded-xl bg-gray-800 overflow-hidden mb-4">
+              {selectedImage ? (
+                <img src={selectedImage} alt={content.name} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-6xl">🚗</span>
               )}
             </div>
+            
+            {/* Thumbnail Gallery */}
+            {allImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {allImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(img)}
+                    className={`w-20 h-20 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0 transition ${
+                      selectedImage === img ? 'ring-2 ring-indigo-500' : 'hover:opacity-80'
+                    }`}
+                  >
+                    <img src={img} alt={`${content.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
+          {/* Info Section */}
           <div>
-            <p className="text-sm uppercase tracking-widest text-gray-400">{displayBrand}</p>
+            <p className="text-sm uppercase tracking-widest text-gray-400">{brandName}</p>
             <h1 className="mt-2 text-4xl font-bold">{content.name}</h1>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -232,6 +261,7 @@ export default function VehicleDetailPage({ params }) {
               <FavoriteButton brand={brand} vehicleSlug={vehicle} vehicleName={content.name} />
             </div>
 
+            {/* Share Buttons */}
             <div className="mt-4 pt-4 border-t border-gray-800">
               <p className="text-sm text-gray-400 mb-2">Share this content:</p>
               <ShareButtons title={content.name} url={`/downloads/cars/${brand}/${vehicle}`} />
@@ -239,6 +269,7 @@ export default function VehicleDetailPage({ params }) {
           </div>
         </div>
 
+        {/* Features and Installation */}
         <div className="grid gap-8 lg:grid-cols-2 mt-12">
           <div className="rounded-2xl border border-gray-800 p-6">
             <h2 className="text-2xl font-bold">✨ Features</h2>
@@ -265,6 +296,7 @@ export default function VehicleDetailPage({ params }) {
         </div>
       </section>
 
+      {/* Comments Section */}
       <div className="mx-auto max-w-7xl px-6 pb-20">
         <Comments contentId={vehicle} contentType="vehicle" />
       </div>

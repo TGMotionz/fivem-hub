@@ -31,6 +31,7 @@ export default function AdminSubmissionsPage() {
   }, []);
 
   async function loadSubmissions() {
+    setLoading(true);
     const { data, error } = await supabase
       .from("submissions")
       .select(`
@@ -55,10 +56,9 @@ export default function AdminSubmissionsPage() {
     setProcessingId(submission.id);
     setMessage("");
     
-    // Create slug from name
     const slug = submission.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
     
-    // Check if content already exists
+    // First, check if content already exists
     const { data: existing } = await supabase
       .from("content_items")
       .select("id")
@@ -83,6 +83,7 @@ export default function AdminSubmissionsPage() {
         version: submission.version || "v1.0.0",
         download_url: submission.download_url,
         image_url: submission.image_url,
+        images: submission.images || [],
         features: submission.features || [],
         install_steps: submission.install_steps || [],
         views: 0,
@@ -103,7 +104,7 @@ export default function AdminSubmissionsPage() {
       .eq("id", submission.id);
     
     if (updateError) {
-      setMessage(`❌ Error updating: ${updateError.message}`);
+      setMessage(`❌ Error updating submission: ${updateError.message}`);
     } else {
       // Update user's contribution count
       const { data: userData } = await supabase
@@ -119,10 +120,10 @@ export default function AdminSubmissionsPage() {
           .eq("id", submission.user_id);
       }
       
-      setMessage(`✅ Approved "${submission.name}"! It will appear in downloads.`);
+      setMessage(`✅ Approved "${submission.name}"!`);
       
-      // Remove the approved submission from the list immediately
-      setSubmissions(submissions.filter(s => s.id !== submission.id));
+      // Reload submissions to remove the approved one
+      await loadSubmissions();
     }
     
     setProcessingId(null);
@@ -141,8 +142,8 @@ export default function AdminSubmissionsPage() {
       setMessage(`❌ Error: ${error.message}`);
     } else {
       setMessage(`❌ Rejected "${submission.name}"`);
-      // Remove the rejected submission from the list immediately
-      setSubmissions(submissions.filter(s => s.id !== submission.id));
+      // Reload submissions to remove the rejected one
+      await loadSubmissions();
     }
     
     setProcessingId(null);
@@ -209,14 +210,12 @@ export default function AdminSubmissionsPage() {
             {submissions.map((sub) => (
               <div key={sub.id} className="rounded-2xl border border-gray-800 bg-zinc-900/50 p-6">
                 <div className="flex flex-col lg:flex-row gap-6">
-                  {/* Image */}
                   {sub.image_url && (
                     <div className="lg:w-48 h-48 rounded-xl overflow-hidden bg-gray-800 flex-shrink-0">
                       <img src={sub.image_url} alt={sub.name} className="w-full h-full object-cover" />
                     </div>
                   )}
                   
-                  {/* Content */}
                   <div className="flex-1">
                     <div className="flex items-start justify-between flex-wrap gap-2">
                       <div>
@@ -264,7 +263,6 @@ export default function AdminSubmissionsPage() {
                       )}
                     </div>
                     
-                    {/* Features Preview */}
                     {sub.features && sub.features.length > 0 && (
                       <div className="mt-4">
                         <p className="text-sm text-gray-400 mb-2">Features:</p>

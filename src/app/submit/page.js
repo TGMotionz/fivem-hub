@@ -12,6 +12,8 @@ export default function SubmitPage() {
   const [message, setMessage] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
   const [formData, setFormData] = useState({
     type: "vehicle",
     category: "",
@@ -34,7 +36,6 @@ export default function SubmitPage() {
       } else {
         setUser(user);
         
-        // Update last active
         await supabase
           .from("public_users")
           .update({ last_active: new Date() })
@@ -45,7 +46,7 @@ export default function SubmitPage() {
   }, [router]);
 
   const categories = {
-    vehicle: ["dodge", "ferrari", "bmw", "tesla", "audi", "mercedes", "porsche", "lamborghini", "ford", "chevrolet"],
+    vehicle: ["audi", "bmw", "chevrolet", "dodge", "ferrari", "ford", "honda", "jeep", "koenigsegg", "lamborghini", "mazda", "mclaren", "mercedes", "mitsubishi", "nissan", "pagani", "porsche", "subaru", "tesla", "toyota", "volkswagen", "volvo"],
     script: ["inventory", "hud", "menus", "jobs", "heists", "maps", "chats", "loadscreens", "phones", "peds", "guns"],
     clothing: ["male", "female", "uniforms", "eup"],
     server_ad: ["free", "paid", "partners"],
@@ -213,6 +214,8 @@ export default function SubmitPage() {
     );
   }
 
+  const currentCategories = categories[formData.type] || [];
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-white">
       <Header />
@@ -246,20 +249,62 @@ export default function SubmitPage() {
               </div>
             </div>
 
-            {/* Category */}
+            {/* Category - Scrollable Dropdown */}
             <div>
               <label className="block text-sm font-semibold mb-2">Category *</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full rounded-xl border border-gray-700 bg-black/50 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-              >
-                <option value="">Select category</option>
-                {categories[formData.type]?.map((cat) => (
-                  <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <div
+                  className="w-full rounded-xl border border-gray-700 bg-black/50 px-4 py-3 text-white cursor-pointer flex justify-between items-center"
+                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                >
+                  <span>
+                    {formData.category 
+                      ? formData.category.charAt(0).toUpperCase() + formData.category.slice(1) 
+                      : "Select category"}
+                  </span>
+                  <svg className={`w-4 h-4 transition-transform ${showCategoryDropdown ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                
+                {showCategoryDropdown && (
+                  <div className="absolute z-10 mt-1 w-full rounded-xl border border-gray-700 bg-black/95 backdrop-blur-lg max-h-60 overflow-y-auto">
+                    <div className="sticky top-0 p-2 border-b border-gray-700 bg-black">
+                      <input
+                        type="text"
+                        placeholder="Search categories..."
+                        value={categorySearch}
+                        onChange={(e) => setCategorySearch(e.target.value)}
+                        className="w-full rounded-lg border border-gray-700 bg-black/50 px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="py-1">
+                      {currentCategories.filter(cat => 
+                        cat.toLowerCase().includes(categorySearch.toLowerCase())
+                      ).map((cat) => (
+                        <div
+                          key={cat}
+                          className="px-4 py-2 hover:bg-indigo-500/20 cursor-pointer transition capitalize"
+                          onClick={() => {
+                            setFormData({ ...formData, category: cat });
+                            setShowCategoryDropdown(false);
+                            setCategorySearch("");
+                          }}
+                        >
+                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        </div>
+                      ))}
+                      {currentCategories.filter(cat => 
+                        cat.toLowerCase().includes(categorySearch.toLowerCase())
+                      ).length === 0 && (
+                        <div className="px-4 py-2 text-gray-400 text-sm">No categories found</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">{currentCategories.length} categories available</p>
             </div>
 
             {/* Name */}

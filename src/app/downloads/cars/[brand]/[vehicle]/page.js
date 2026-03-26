@@ -12,6 +12,9 @@ const brandNames = {
   dodge: "Dodge", ferrari: "Ferrari", bmw: "BMW", tesla: "Tesla",
   audi: "Audi", mercedes: "Mercedes", porsche: "Porsche",
   lamborghini: "Lamborghini", ford: "Ford", chevrolet: "Chevrolet",
+  hyundai: "Hyundai", kia: "Kia", suzuki: "Suzuki", subaru: "Subaru",
+  honda: "Honda", nissan: "Nissan", toyota: "Toyota", volkswagen: "Volkswagen",
+  volvo: "Volvo", mazda: "Mazda", mitsubishi: "Mitsubishi"
 };
 
 function getPlatformIcon(url) {
@@ -66,7 +69,8 @@ async function trackDownload(slug, userId) {
         .eq("slug", slug);
     }
     
-    await supabase
+    // Record download analytics
+    const { error: analyticsError } = await supabase
       .from("download_analytics")
       .insert({
         content_slug: slug,
@@ -74,6 +78,10 @@ async function trackDownload(slug, userId) {
         user_id: userId || null,
         downloaded_at: new Date(),
       });
+    
+    if (analyticsError) {
+      console.error("Error tracking download:", analyticsError);
+    }
   } catch (error) {
     console.error("Error tracking download:", error);
   }
@@ -83,6 +91,7 @@ export default function VehicleDetailPage({ params }) {
   const [brand, setBrand] = useState("");
   const [vehicle, setVehicle] = useState("");
   const [content, setContent] = useState(null);
+  const [author, setAuthor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
   const [notFound, setNotFound] = useState(false);
@@ -125,6 +134,17 @@ export default function VehicleDetailPage({ params }) {
       
       setContent(data);
       setSelectedImage(data.image_url);
+      
+      // Load author info
+      if (data.author_id) {
+        const { data: authorData } = await supabase
+          .from("public_users")
+          .select("*")
+          .eq("id", data.author_id)
+          .single();
+        setAuthor(authorData);
+      }
+      
       setLoading(false);
       trackView(vehicle, userId);
     }
@@ -134,11 +154,7 @@ export default function VehicleDetailPage({ params }) {
 
   const getBrandName = () => {
     if (!brand) return "";
-    const names = {
-      dodge: "Dodge", ferrari: "Ferrari", bmw: "BMW", tesla: "Tesla",
-      audi: "Audi", mercedes: "Mercedes", porsche: "Porsche",
-    };
-    return names[brand] || brand.charAt(0).toUpperCase() + brand.slice(1);
+    return brandNames[brand] || brand.charAt(0).toUpperCase() + brand.slice(1);
   };
 
   if (loading) {
@@ -172,7 +188,6 @@ export default function VehicleDetailPage({ params }) {
   const brandName = getBrandName();
   const platform = getPlatformIcon(content.download_url);
   
-  // Get all images for gallery
   const allImages = [content.image_url, ...(content.images || [])].filter(Boolean);
 
   return (
@@ -183,7 +198,6 @@ export default function VehicleDetailPage({ params }) {
         <div className="grid gap-10 lg:grid-cols-2">
           {/* Image Gallery Section */}
           <div className="rounded-2xl border border-gray-800 bg-zinc-900/50 p-4">
-            {/* Main Image */}
             <div className="flex h-[320px] items-center justify-center rounded-xl bg-gray-800 overflow-hidden mb-4">
               {selectedImage ? (
                 <img src={selectedImage} alt={content.name} className="w-full h-full object-cover" />
@@ -191,8 +205,6 @@ export default function VehicleDetailPage({ params }) {
                 <span className="text-6xl">🚗</span>
               )}
             </div>
-            
-            {/* Thumbnail Gallery */}
             {allImages.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {allImages.map((img, idx) => (
@@ -221,12 +233,22 @@ export default function VehicleDetailPage({ params }) {
                 <p className="font-semibold">{content.version || "v1.0.0"}</p>
               </div>
               <div className="rounded-xl border border-gray-800 p-4">
-                <p className="text-sm text-gray-400">Author</p>
-                <p className="font-semibold">{content.author || "FiveM Free Hub"}</p>
-              </div>
-              <div className="rounded-xl border border-gray-800 p-4">
                 <p className="text-sm text-gray-400">Category</p>
                 <p className="font-semibold capitalize">{content.category}</p>
+              </div>
+              <div className="rounded-xl border border-gray-800 p-4">
+                <p className="text-sm text-gray-400">Uploaded by</p>
+                {author ? (
+                  <Link 
+                    href={`/profile/${author.id}`}
+                    className="font-semibold text-white hover:text-indigo-400 transition inline-flex items-center gap-1"
+                  >
+                    {author.username || author.email?.split("@")[0] || "Community Creator"}
+                    <span className="text-xs text-gray-500">→</span>
+                  </Link>
+                ) : (
+                  <p className="font-semibold text-gray-400">Community Creator</p>
+                )}
               </div>
               <div className="rounded-xl border border-gray-800 p-4">
                 <p className="text-sm text-gray-400">Statistics</p>

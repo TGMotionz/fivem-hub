@@ -30,21 +30,20 @@ export default function AdminSubmissionsPage() {
 
   async function loadSubmissions() {
     setLoading(true);
-    
-    // For admin, we need to bypass RLS - use service role or different approach
     const { data, error } = await supabase
       .from("submissions")
-      .select("*")
+      .select(`
+        *,
+        public_users (
+          username,
+          email
+        )
+      `)
       .eq("status", "pending")
       .order("created_at", { ascending: false });
 
-    console.log("Submissions found:", data?.length);
-    console.log("Error:", error);
-
     if (!error && data) {
       setSubmissions(data);
-    } else {
-      console.error("Error loading submissions:", error);
     }
     setLoading(false);
   }
@@ -65,7 +64,7 @@ export default function AdminSubmissionsPage() {
       slug = `${slug}-${Date.now()}`;
     }
     
-    // Update submission status
+    // Update submission to approved
     const { error: updateError } = await supabase
       .from("submissions")
       .update({ status: "approved", updated_at: new Date() })
@@ -77,7 +76,7 @@ export default function AdminSubmissionsPage() {
       return;
     }
     
-    // Create content item
+    // Create content item with author_id
     const { error: contentError } = await supabase
       .from("content_items")
       .insert([{
@@ -92,6 +91,7 @@ export default function AdminSubmissionsPage() {
         images: submission.images || [],
         features: submission.features || [],
         install_steps: submission.install_steps || [],
+        author_id: submission.user_id,  // This sets the original creator
         views: 0,
         downloads: 0,
         created_at: new Date(),
@@ -100,6 +100,20 @@ export default function AdminSubmissionsPage() {
     if (contentError) {
       setMessage(`❌ Error creating content: ${contentError.message}`);
     } else {
+      // Update user's contribution count
+      const { data: userData } = await supabase
+        .from("public_users")
+        .select("contributions")
+        .eq("id", submission.user_id)
+        .single();
+      
+      if (userData) {
+        await supabase
+          .from("public_users")
+          .update({ contributions: (userData.contributions || 0) + 1 })
+          .eq("id", submission.user_id);
+      }
+      
       setMessage(`✅ Approved "${submission.name}"!`);
       await loadSubmissions();
     }
@@ -206,7 +220,7 @@ export default function AdminSubmissionsPage() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-400 mt-1">
-                          Submitted by: {sub.user_id?.slice(0, 8)}... • {new Date(sub.created_at).toLocaleString()}
+                          Submitted by: {sub.public_users?.username || sub.public_users?.email?.split("@")[0] || "Anonymous"} • {new Date(sub.created_at).toLocaleString()}
                         </p>
                       </div>
                       <div className="flex gap-2">

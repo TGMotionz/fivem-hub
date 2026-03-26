@@ -48,7 +48,10 @@ export default function SubmitPage() {
   }, [router]);
 
   const categories = {
-    vehicle: ["audi", "bmw", "chevrolet", "dodge", "ferrari", "ford", "honda", "jeep", "koenigsegg", "lamborghini", "mazda", "mclaren", "mercedes", "mitsubishi", "nissan", "pagani", "porsche", "subaru", "tesla", "toyota", "volkswagen", "volvo"],
+    vehicle: ["audi", "bmw", "chevrolet", "dodge", "ferrari", "ford", "honda", "hyundai", "jeep", "kia", "lamborghini", "mazda", "mclaren", "mercedes", "mitsubishi", "nissan", "porsche", "subaru", "suzuki", "tesla", "toyota", "volkswagen", "volvo"],
+    motorcycle: ["sport", "cruiser", "dirt", "touring", "scooter", "atv"],
+    boat: ["speed", "yacht", "jetski", "fishing", "police", "cargo"],
+    aircraft: ["helicopter", "commercial", "private", "fighter", "prop", "vtol"],
     script: ["inventory", "hud", "menus", "jobs", "heists", "maps", "chats", "loadscreens", "phones", "peds", "guns"],
     clothing: ["male", "female", "uniforms", "eup"],
     server_ad: ["free", "paid", "partners"],
@@ -59,6 +62,9 @@ export default function SubmitPage() {
 
   const typeIcons = {
     vehicle: "🚗",
+    motorcycle: "🏍️",
+    boat: "⛵",
+    aircraft: "✈️",
     script: "📜",
     clothing: "👕",
     server_ad: "📢",
@@ -249,7 +255,7 @@ export default function SubmitPage() {
             <div>
               <label className="block text-sm font-semibold mb-2">Content Type *</label>
               <div className="flex flex-wrap gap-4">
-                {["vehicle", "script", "clothing", "server_ad", "gun", "ped", "map"].map((type) => (
+                {["vehicle", "motorcycle", "boat", "aircraft", "script", "clothing", "server_ad", "gun", "ped", "map"].map((type) => (
                   <label key={type} className="flex items-center gap-2">
                     <input
                       type="radio"
@@ -259,7 +265,7 @@ export default function SubmitPage() {
                       className="w-4 h-4 text-indigo-500"
                     />
                     <span className="capitalize flex items-center gap-1">
-                      {typeIcons[type]} {type.replace("_", " ")}
+                      {typeIcons[type]} {type === "server_ad" ? "Server Ad" : type}
                     </span>
                   </label>
                 ))}
@@ -331,7 +337,7 @@ export default function SubmitPage() {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., Ferrari 488 GTB, Advanced Inventory System"
+                placeholder="e.g., Ferrari 488 GTB, Yamaha R6, Speedboat 3000"
                 className="w-full rounded-xl border border-gray-700 bg-black/50 px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
               />

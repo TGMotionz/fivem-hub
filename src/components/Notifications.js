@@ -9,6 +9,7 @@ export default function Notifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [user, setUser] = useState(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     async function loadNotifications() {
@@ -17,12 +18,19 @@ export default function Notifications() {
       
       setUser(user);
       
-      const { data } = await supabase
+      // Try to load notifications, handle error gracefully
+      const { data, error: fetchError } = await supabase
         .from("notifications")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(20);
+      
+      if (fetchError) {
+        console.error("Notifications table may not exist:", fetchError);
+        setError(true);
+        return;
+      }
       
       if (data) {
         setNotifications(data);
@@ -31,20 +39,6 @@ export default function Notifications() {
     }
     
     loadNotifications();
-    
-    // Subscribe to new notifications
-    const subscription = supabase
-      .channel('notifications')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user?.id}` }, 
-        (payload) => {
-          setNotifications(prev => [payload.new, ...prev]);
-          setUnreadCount(prev => prev + 1);
-        })
-      .subscribe();
-    
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   async function markAsRead(notificationId) {
@@ -59,29 +53,11 @@ export default function Notifications() {
     setUnreadCount(prev => prev - 1);
   }
 
-  async function markAllAsRead() {
-    const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
-    for (const id of unreadIds) {
-      await supabase.from("notifications").update({ read: true }).eq("id", id);
-    }
-    
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-    setUnreadCount(0);
-  }
-
-  function getIcon(type) {
-    switch(type) {
-      case 'submission_approved': return '✅';
-      case 'submission_rejected': return '❌';
-      case 'new_comment': return '💬';
-      case 'download_milestone': return '🎉';
-      case 'badge_earned': return '🏆';
-      case 'featured': return '⭐';
-      default: return '🔔';
-    }
-  }
-
   if (!user) return null;
+  
+  if (error) {
+    return null; // Hide notifications if table doesn't exist
+  }
 
   return (
     <div className="relative">
@@ -101,11 +77,6 @@ export default function Notifications() {
         <div className="absolute right-0 mt-2 w-96 rounded-xl border border-gray-700 bg-zinc-900 shadow-xl overflow-hidden z-50">
           <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h3 className="font-semibold">Notifications</h3>
-            {unreadCount > 0 && (
-              <button onClick={markAllAsRead} className="text-xs text-indigo-400 hover:text-indigo-300">
-                Mark all as read
-              </button>
-            )}
           </div>
           
           <div className="max-h-96 overflow-y-auto">
@@ -122,12 +93,17 @@ export default function Notifications() {
                 >
                   <Link href={notif.link || '#'} className="block">
                     <div className="flex gap-3">
-                      <div className="text-2xl">{getIcon(notif.type)}</div>
+                      <div className="text-2xl">
+                        {notif.type === 'submission_approved' && '✅'}
+                        {notif.type === 'submission_rejected' && '❌'}
+                        {notif.type === 'badge_earned' && '🏆'}
+                        {!notif.type && '🔔'}
+                      </div>
                       <div className="flex-1">
                         <p className="font-semibold text-sm">{notif.title}</p>
                         <p className="text-xs text-gray-400 mt-1">{notif.message}</p>
                         <p className="text-xs text-gray-500 mt-1">
-                          {new Date(notif.created_at).toLocaleDateString()} {new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          {new Date(notif.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>

@@ -32,17 +32,15 @@ export default function AdminSubmissionsPage() {
 
   async function loadSubmissions() {
     setLoading(true);
+    // Simplified query - no joins
     const { data, error } = await supabase
       .from("submissions")
-      .select(`
-        *,
-        public_users (
-          username,
-          email
-        )
-      `)
+      .select("*")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
+
+    console.log("Loaded submissions:", data);
+    console.log("Error:", error);
 
     if (!error && data) {
       setSubmissions(data);
@@ -56,10 +54,10 @@ export default function AdminSubmissionsPage() {
     setProcessingId(submission.id);
     setMessage("");
     
-    // Create a unique slug
+    // Create slug
     let slug = submission.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
     
-    // Check if slug already exists
+    // Check for duplicate slug
     const { data: existing } = await supabase
       .from("content_items")
       .select("slug")
@@ -70,19 +68,19 @@ export default function AdminSubmissionsPage() {
       slug = `${slug}-${Date.now()}`;
     }
     
-    // FIRST: Update submission status to approved
+    // Update submission to approved
     const { error: updateError } = await supabase
       .from("submissions")
-      .update({ status: "approved", updated_at: new Date() })
+      .update({ status: "approved" })
       .eq("id", submission.id);
     
     if (updateError) {
-      setMessage(`❌ Error updating: ${updateError.message}`);
+      setMessage(`❌ Error: ${updateError.message}`);
       setProcessingId(null);
       return;
     }
     
-    // SECOND: Create content item
+    // Create content item
     const { error: contentError } = await supabase
       .from("content_items")
       .insert([{
@@ -105,23 +103,7 @@ export default function AdminSubmissionsPage() {
     if (contentError) {
       setMessage(`❌ Error creating content: ${contentError.message}`);
     } else {
-      // Update user's contribution count
-      const { data: userData } = await supabase
-        .from("public_users")
-        .select("contributions")
-        .eq("id", submission.user_id)
-        .single();
-      
-      if (userData) {
-        await supabase
-          .from("public_users")
-          .update({ contributions: (userData.contributions || 0) + 1 })
-          .eq("id", submission.user_id);
-      }
-      
       setMessage(`✅ Approved "${submission.name}"!`);
-      
-      // Reload submissions to remove the approved one
       await loadSubmissions();
     }
     
@@ -134,7 +116,7 @@ export default function AdminSubmissionsPage() {
     
     const { error } = await supabase
       .from("submissions")
-      .update({ status: "rejected", updated_at: new Date() })
+      .update({ status: "rejected" })
       .eq("id", submission.id);
     
     if (error) {
@@ -200,8 +182,9 @@ export default function AdminSubmissionsPage() {
           </div>
         ) : submissions.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">✅</div>
-            <p className="text-gray-400">No pending submissions. All caught up!</p>
+            <div className="text-6xl mb-4">📭</div>
+            <p className="text-gray-400">No pending submissions.</p>
+            <p className="text-xs text-gray-500 mt-2">Check console for debug info</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -227,7 +210,7 @@ export default function AdminSubmissionsPage() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-400 mt-1">
-                          Submitted by {sub.public_users?.username || sub.public_users?.email?.split("@")[0] || "Anonymous"} • {new Date(sub.created_at).toLocaleDateString()}
+                          ID: {sub.user_id?.slice(0, 8)}... • {new Date(sub.created_at).toLocaleString()}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -260,20 +243,6 @@ export default function AdminSubmissionsPage() {
                         </a>
                       )}
                     </div>
-                    
-                    {sub.features && sub.features.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-400 mb-2">Features:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {sub.features.slice(0, 3).map((f, i) => (
-                            <span key={i} className="text-xs px-2 py-1 rounded-full bg-gray-800 text-gray-300">✓ {f}</span>
-                          ))}
-                          {sub.features.length > 3 && (
-                            <span className="text-xs px-2 py-1 rounded-full bg-gray-800 text-gray-400">+{sub.features.length - 3} more</span>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

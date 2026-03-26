@@ -13,7 +13,7 @@ export default function AdminSubmissionsPage() {
   const [message, setMessage] = useState("");
   const [processingId, setProcessingId] = useState(null);
 
-  const adminEmails = ["kjek98@gmail.com", "your-email@gmail.com", "admin@example.com"];
+  const adminEmails = ["kjek98@gmail.com"];
 
   useEffect(() => {
     async function checkAuth() {
@@ -56,22 +56,33 @@ export default function AdminSubmissionsPage() {
     setProcessingId(submission.id);
     setMessage("");
     
-    const slug = submission.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    // Create a unique slug
+    let slug = submission.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
     
-    // First, check if content already exists
+    // Check if slug already exists
     const { data: existing } = await supabase
       .from("content_items")
-      .select("id")
+      .select("slug")
       .eq("slug", slug)
       .maybeSingle();
     
     if (existing) {
-      setMessage(`❌ Content with slug "${slug}" already exists!`);
+      slug = `${slug}-${Date.now()}`;
+    }
+    
+    // FIRST: Update submission status to approved
+    const { error: updateError } = await supabase
+      .from("submissions")
+      .update({ status: "approved", updated_at: new Date() })
+      .eq("id", submission.id);
+    
+    if (updateError) {
+      setMessage(`❌ Error updating: ${updateError.message}`);
       setProcessingId(null);
       return;
     }
     
-    // Create content item from submission
+    // SECOND: Create content item
     const { error: contentError } = await supabase
       .from("content_items")
       .insert([{
@@ -93,18 +104,6 @@ export default function AdminSubmissionsPage() {
     
     if (contentError) {
       setMessage(`❌ Error creating content: ${contentError.message}`);
-      setProcessingId(null);
-      return;
-    }
-    
-    // Update submission status to approved
-    const { error: updateError } = await supabase
-      .from("submissions")
-      .update({ status: "approved", updated_at: new Date() })
-      .eq("id", submission.id);
-    
-    if (updateError) {
-      setMessage(`❌ Error updating submission: ${updateError.message}`);
     } else {
       // Update user's contribution count
       const { data: userData } = await supabase
@@ -142,7 +141,6 @@ export default function AdminSubmissionsPage() {
       setMessage(`❌ Error: ${error.message}`);
     } else {
       setMessage(`❌ Rejected "${submission.name}"`);
-      // Reload submissions to remove the rejected one
       await loadSubmissions();
     }
     

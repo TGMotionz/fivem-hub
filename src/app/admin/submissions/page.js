@@ -13,15 +13,13 @@ export default function AdminSubmissionsPage() {
   const [message, setMessage] = useState("");
   const [processingId, setProcessingId] = useState(null);
 
-  const adminEmails = ["kjek98@gmail.com"];
-
   useEffect(() => {
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      setIsAdmin(user?.email === "kjek98@gmail.com");
       
-      if (user && adminEmails.includes(user.email)) {
-        setIsAdmin(true);
+      if (user?.email === "kjek98@gmail.com") {
         loadSubmissions();
       } else {
         setLoading(false);
@@ -32,14 +30,15 @@ export default function AdminSubmissionsPage() {
 
   async function loadSubmissions() {
     setLoading(true);
-    // Simplified query - no joins
+    
+    // For admin, we need to bypass RLS - use service role or different approach
     const { data, error } = await supabase
       .from("submissions")
       .select("*")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
 
-    console.log("Loaded submissions:", data);
+    console.log("Submissions found:", data?.length);
     console.log("Error:", error);
 
     if (!error && data) {
@@ -54,10 +53,8 @@ export default function AdminSubmissionsPage() {
     setProcessingId(submission.id);
     setMessage("");
     
-    // Create slug
     let slug = submission.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
     
-    // Check for duplicate slug
     const { data: existing } = await supabase
       .from("content_items")
       .select("slug")
@@ -68,14 +65,14 @@ export default function AdminSubmissionsPage() {
       slug = `${slug}-${Date.now()}`;
     }
     
-    // Update submission to approved
+    // Update submission status
     const { error: updateError } = await supabase
       .from("submissions")
-      .update({ status: "approved" })
+      .update({ status: "approved", updated_at: new Date() })
       .eq("id", submission.id);
     
     if (updateError) {
-      setMessage(`❌ Error: ${updateError.message}`);
+      setMessage(`❌ Error updating: ${updateError.message}`);
       setProcessingId(null);
       return;
     }
@@ -116,7 +113,7 @@ export default function AdminSubmissionsPage() {
     
     const { error } = await supabase
       .from("submissions")
-      .update({ status: "rejected" })
+      .update({ status: "rejected", updated_at: new Date() })
       .eq("id", submission.id);
     
     if (error) {
@@ -147,7 +144,7 @@ export default function AdminSubmissionsPage() {
       <main className="min-h-screen bg-black text-white">
         <Header />
         <div className="text-center py-20">
-          <p className="text-red-400">You don't have permission to access this page.</p>
+          <p className="text-red-400">Admin access required</p>
           <Link href="/" className="mt-4 inline-block text-indigo-400">Go Home</Link>
         </div>
       </main>
@@ -162,7 +159,7 @@ export default function AdminSubmissionsPage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold">Pending Submissions</h1>
-            <p className="text-gray-400 mt-2">Review and approve user-submitted content</p>
+            <p className="text-gray-400 mt-2">{submissions.length} submissions waiting for review</p>
           </div>
           <Link href="/admin" className="text-indigo-400 hover:text-indigo-300">
             ← Back to Admin
@@ -182,9 +179,8 @@ export default function AdminSubmissionsPage() {
           </div>
         ) : submissions.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">📭</div>
-            <p className="text-gray-400">No pending submissions.</p>
-            <p className="text-xs text-gray-500 mt-2">Check console for debug info</p>
+            <div className="text-6xl mb-4">✅</div>
+            <p className="text-gray-400">No pending submissions. All caught up!</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -210,7 +206,7 @@ export default function AdminSubmissionsPage() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-400 mt-1">
-                          ID: {sub.user_id?.slice(0, 8)}... • {new Date(sub.created_at).toLocaleString()}
+                          Submitted by: {sub.user_id?.slice(0, 8)}... • {new Date(sub.created_at).toLocaleString()}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -234,11 +230,9 @@ export default function AdminSubmissionsPage() {
                     <p className="mt-3 text-gray-300">{sub.description}</p>
                     
                     <div className="mt-4 flex flex-wrap gap-4 text-sm">
-                      {sub.version && (
-                        <span className="text-gray-400">📦 Version: {sub.version}</span>
-                      )}
+                      {sub.version && <span>📦 Version: {sub.version}</span>}
                       {sub.download_url && (
-                        <a href={sub.download_url} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:text-indigo-300">
+                        <a href={sub.download_url} target="_blank" className="text-indigo-400 hover:text-indigo-300">
                           🔗 Download Link
                         </a>
                       )}

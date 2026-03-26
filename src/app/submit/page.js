@@ -48,7 +48,15 @@ export default function SubmitPage() {
   }, [router]);
 
   const categories = {
-    vehicle: ["audi", "bmw", "chevrolet", "dodge", "ferrari", "ford", "honda", "hyundai", "jeep", "kia", "lamborghini", "mazda", "mclaren", "mercedes", "mitsubishi", "nissan", "porsche", "subaru", "suzuki", "tesla", "toyota", "volkswagen", "volvo"],
+    vehicle: [
+  "acura", "alfa romeo", "alpine", "aston martin", "audi", "bentley", "bmw", "bugatti",
+  "buick", "cadillac", "chevrolet", "chrysler", "citroen", "dacia", "daihatsu", "dodge",
+  "ds", "ferrari", "fiat", "ford", "genesis", "gmc", "honda", "hyundai", "infiniti",
+  "isuzu", "jaguar", "jeep", "kia", "koenigsegg", "lamborghini", "land rover", "lexus",
+  "lincoln", "lotus", "maserati", "mazda", "mclaren", "mercedes", "mg", "mini",
+  "mitsubishi", "morgan", "nissan", "pagani", "peugeot", "porsche", "ram", "renault",
+  "rolls-royce", "seat", "skoda", "subaru", "suzuki", "tesla", "toyota", "volkswagen", "volvo"
+],
     motorcycle: ["sport", "cruiser", "dirt", "touring", "scooter", "atv"],
     boat: ["speed", "yacht", "jetski", "fishing", "police", "cargo"],
     aircraft: ["helicopter", "commercial", "private", "fighter", "prop", "vtol"],

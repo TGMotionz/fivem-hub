@@ -2,15 +2,15 @@ import Link from "next/link";
 import Header from "@/components/Header";
 
 export default function VehiclesPage() {
-  // Vehicle categories
   const categories = [
     {
       title: "Cars",
       slug: "cars-list",
       icon: "🚗",
       description: "All car brands",
-      items: ["60+ brands including Audi, BMW, Ferrari, Tesla, Hyundai, Kia, Suzuki, and more"],
+      items: ["60+ brands including Audi, BMW, Ferrari, Tesla, Hyundai, Kia, and more"],
       link: "/downloads/cars/cars-list",
+      count: "60+",
     },
     {
       title: "Motorcycles",
@@ -19,6 +19,7 @@ export default function VehiclesPage() {
       description: "Sport bikes, cruisers, dirt bikes",
       items: ["Sport Bikes", "Cruisers", "Dirt Bikes", "Touring", "Scooters", "ATVs"],
       link: "/downloads/cars/motorcycles",
+      count: "6 categories",
     },
     {
       title: "Boats",
@@ -27,6 +28,7 @@ export default function VehiclesPage() {
       description: "Speed boats, yachts, jet skis",
       items: ["Speed Boats", "Yachts", "Jet Skis", "Fishing Boats", "Police Boats"],
       link: "/downloads/cars/boats",
+      count: "5+ types",
     },
     {
       title: "Aircraft",
@@ -35,6 +37,7 @@ export default function VehiclesPage() {
       description: "Helicopters, jets, planes",
       items: ["Helicopters", "Commercial Jets", "Private Jets", "Fighter Jets", "Prop Planes"],
       link: "/downloads/cars/aircraft",
+      count: "5+ types",
     },
   ];
 
@@ -60,10 +63,8 @@ export default function VehiclesPage() {
               <div className="text-6xl mb-4 group-hover:scale-110 transition">{cat.icon}</div>
               <h2 className="text-xl font-bold">{cat.title}</h2>
               <p className="text-sm text-gray-400 mt-2">{cat.description}</p>
-              <div className="mt-3 flex flex-wrap gap-1 justify-center">
-                {cat.items.slice(0, 3).map((item, i) => (
-                  <span key={i} className="text-xs text-gray-500">• {item}</span>
-                ))}
+              <div className="mt-3">
+                <span className="text-xs text-indigo-400">{cat.count}</span>
               </div>
               <div className="mt-4">
                 <span className="inline-flex items-center gap-2 text-indigo-400 group-hover:gap-3 transition text-sm">

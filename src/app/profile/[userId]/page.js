@@ -10,7 +10,7 @@ export default function UserProfilePage({ params }) {
   const [userId, setUserId] = useState("");
   const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
-  const [submissions, setSubmissions] = useState([]);
+  const [userSubmissions, setUserSubmissions] = useState([]);
   const [userDownloads, setUserDownloads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
@@ -61,13 +61,12 @@ export default function UserProfilePage({ params }) {
             .eq("user_id", userId)
             .order("created_at", { ascending: false });
           
-          // Get user's approved submissions
-          const { data: userSubmissions } = await supabase
+          // Get user's approved submissions (published content)
+          const { data: submissions } = await supabase
             .from("content_items")
             .select("*")
             .eq("author_id", userId)
-            .order("created_at", { ascending: false })
-            .limit(10);
+            .order("created_at", { ascending: false });
           
           // Get user's downloads
           const { data: downloads } = await supabase
@@ -79,7 +78,7 @@ export default function UserProfilePage({ params }) {
           
           setUser(userData);
           setFavorites(userFavorites || []);
-          setSubmissions(userSubmissions || []);
+          setUserSubmissions(submissions || []);
           setUserDownloads(downloads || []);
           setEditForm({
             username: userData.username || "",
@@ -224,7 +223,6 @@ export default function UserProfilePage({ params }) {
         
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row items-start gap-6 mb-8">
-          {/* Avatar Section */}
           <div className="relative">
             <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-4xl font-bold overflow-hidden">
               {user.avatar_url ? (
@@ -247,7 +245,6 @@ export default function UserProfilePage({ params }) {
             )}
           </div>
           
-          {/* User Info */}
           <div className="flex-1">
             {!isEditing ? (
               <>
@@ -273,7 +270,6 @@ export default function UserProfilePage({ params }) {
                   <p className="mt-3 text-gray-300 max-w-2xl">{user.bio}</p>
                 )}
                 
-                {/* Social Links */}
                 {(user.social_links?.discord || user.social_links?.twitter || user.social_links?.github) && (
                   <div className="flex gap-3 mt-4">
                     {user.social_links?.discord && (
@@ -358,7 +354,7 @@ export default function UserProfilePage({ params }) {
             <div className="text-sm text-gray-400">Favorites</div>
           </div>
           <div className="rounded-xl border border-gray-800 bg-zinc-900/30 p-4 text-center">
-            <div className="text-2xl font-bold text-green-400">{submissions.length}</div>
+            <div className="text-2xl font-bold text-green-400">{userSubmissions.length}</div>
             <div className="text-sm text-gray-400">Contributions</div>
           </div>
           <div className="rounded-xl border border-gray-800 bg-zinc-900/30 p-4 text-center">
@@ -371,29 +367,41 @@ export default function UserProfilePage({ params }) {
           </div>
         </div>
 
-        {/* User's Submissions */}
-        {submissions.length > 0 && (
+        {/* User's Published Content */}
+        {userSubmissions.length > 0 && (
           <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-4">📦 Your Contributions</h2>
+            <h2 className="text-2xl font-bold mb-4">📦 Published Content</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {submissions.map((sub) => (
+              {userSubmissions.map((item) => (
                 <Link
-                  key={sub.id}
-                  href={sub.type === 'vehicle' ? `/downloads/cars/${sub.category}/${sub.slug}` : `/downloads/scripts/${sub.category}/${sub.slug}`}
+                  key={item.id}
+                  href={
+                    item.type === 'vehicle' ? `/downloads/cars/${item.category}/${item.slug}` :
+                    item.type === 'motorcycle' ? `/downloads/cars/motorcycles/${item.category}/${item.slug}` :
+                    item.type === 'boat' ? `/downloads/cars/boats/${item.category}/${item.slug}` :
+                    item.type === 'aircraft' ? `/downloads/cars/aircraft/${item.category}/${item.slug}` :
+                    `/downloads/scripts/${item.category}/${item.slug}`
+                  }
                   className="rounded-xl border border-gray-800 p-4 hover:border-indigo-500 transition group"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-2xl">
-                      {sub.type === "vehicle" && "🚗"}
-                      {sub.type === "script" && "📜"}
-                      {sub.type === "clothing" && "👕"}
+                      {item.type === "vehicle" && "🚗"}
+                      {item.type === "script" && "📜"}
+                      {item.type === "motorcycle" && "🏍️"}
+                      {item.type === "boat" && "⛵"}
+                      {item.type === "aircraft" && "✈️"}
+                      {item.type === "gun" && "🔫"}
+                      {item.type === "ped" && "👥"}
+                      {item.type === "map" && "🗺️"}
+                      {item.type === "clothing" && "👕"}
                     </span>
-                    <h3 className="font-semibold group-hover:text-indigo-400 transition">{sub.name}</h3>
+                    <h3 className="font-semibold group-hover:text-indigo-400 transition truncate">{item.name}</h3>
                   </div>
-                  <p className="text-sm text-gray-400 capitalize">{sub.category}</p>
+                  <p className="text-sm text-gray-400 capitalize">{item.category}</p>
                   <div className="mt-2 flex gap-3 text-xs text-gray-500">
-                    <span>👁️ {sub.views || 0}</span>
-                    <span>⬇️ {sub.downloads || 0}</span>
+                    <span>👁️ {item.views || 0}</span>
+                    <span>⬇️ {item.downloads || 0}</span>
                   </div>
                 </Link>
               ))}
@@ -422,11 +430,11 @@ export default function UserProfilePage({ params }) {
         )}
 
         {/* Recent Activity */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold mb-4">📰 Recent Activity</h2>
-          <div className="space-y-3">
-            {userDownloads.length > 0 ? (
-              userDownloads.map((download, i) => (
+        {userDownloads.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold mb-4">📰 Recent Activity</h2>
+            <div className="space-y-3">
+              {userDownloads.map((download, i) => (
                 <div key={i} className="rounded-lg border border-gray-800 bg-zinc-900/30 p-3 hover:bg-zinc-900/50 transition">
                   <div className="flex items-center gap-3">
                     <span className="text-xl">⬇️</span>
@@ -436,18 +444,16 @@ export default function UserProfilePage({ params }) {
                           {download.content_slug.replace(/-/g, " ")}
                         </Link>
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">{new Date(download.downloaded_at).toLocaleDateString()} at {new Date(download.downloaded_at).toLocaleTimeString()}</p>
+                      <p className="text-xs text-gray-500 mt-1">{new Date(download.downloaded_at).toLocaleDateString()}</p>
                     </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-400 text-center py-4">No recent activity</p>
-            )}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {favorites.length === 0 && submissions.length === 0 && userDownloads.length === 0 && (
+        {favorites.length === 0 && userSubmissions.length === 0 && userDownloads.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             No activity yet. Start exploring and saving content!
           </div>

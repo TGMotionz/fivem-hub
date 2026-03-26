@@ -21,17 +21,15 @@ export default function Comments({ contentId, contentType }) {
         .from("comments")
         .select(`
           *,
-          public_users (
-            username,
-            email,
-            avatar_url
-          )
+          users:user_id (email)
         `)
         .eq("content_id", contentId)
         .order("created_at", { ascending: false });
       
       if (!error && data) {
         setComments(data);
+      } else {
+        console.error("Error loading comments:", error);
       }
       setLoading(false);
     }
@@ -58,6 +56,7 @@ export default function Comments({ contentId, contentType }) {
       .from("comments")
       .insert([{
         content_id: contentId,
+        content_type: contentType,
         user_id: user.id,
         content: newComment.trim(),
         rating: rating,
@@ -75,11 +74,7 @@ export default function Comments({ contentId, contentType }) {
         .from("comments")
         .select(`
           *,
-          public_users (
-            username,
-            email,
-            avatar_url
-          )
+          users:user_id (email)
         `)
         .eq("content_id", contentId)
         .order("created_at", { ascending: false });
@@ -185,16 +180,16 @@ export default function Comments({ contentId, contentType }) {
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold">
-                    {comment.public_users?.username?.charAt(0).toUpperCase() || "U"}
+                    {comment.users?.email?.charAt(0).toUpperCase() || "U"}
                   </div>
                   <div>
-                    <p className="font-semibold">
-                      {comment.public_users?.username || comment.public_users?.email?.split("@")[0] || "Anonymous"}
+                    <p className="font-semibold text-sm">
+                      {comment.users?.email?.split("@")[0] || "Anonymous"}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <div className="flex">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <span key={star} className={`text-sm ${star <= (comment.rating || 0) ? "text-yellow-400" : "text-gray-600"}`}>
+                          <span key={star} className={`text-xs ${star <= (comment.rating || 0) ? "text-yellow-400" : "text-gray-600"}`}>
                             ★
                           </span>
                         ))}

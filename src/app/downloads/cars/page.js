@@ -10,7 +10,7 @@ export default function VehiclesPage() {
       description: "All car brands",
       items: ["60+ brands including Audi, BMW, Ferrari, Tesla, Hyundai, Kia, and more"],
       link: "/downloads/cars/cars-list",
-      count: "60+",
+      count: "60+ brands",
     },
     {
       title: "Motorcycles",

@@ -2,7 +2,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 
 export default function CarsListPage() {
-  // Complete list of all car brands
+  // Complete list of all car brands - 60+ brands
   const brands = [
     "Acura", "Alfa Romeo", "Alpine", "Aston Martin", "Audi", "Bentley", "BMW", "Bugatti",
     "Buick", "Cadillac", "Chevrolet", "Chrysler", "Citroen", "Dacia", "Daihatsu", "Dodge",

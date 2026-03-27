@@ -12,6 +12,7 @@ export default function UserProfilePage({ params }) {
   const [favorites, setFavorites] = useState([]);
   const [userSubmissions, setUserSubmissions] = useState([]);
   const [userDownloads, setUserDownloads] = useState([]);
+  const [userBadges, setUserBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -96,6 +97,41 @@ export default function UserProfilePage({ params }) {
     }
     
     if (userId) loadUserData();
+  }, [userId]);
+
+  // Load user badges
+  useEffect(() => {
+    async function loadUserBadges() {
+      if (!userId) return;
+      
+      const { data } = await supabase
+        .from("user_badges")
+        .select(`
+          *,
+          badges (
+            name,
+            description,
+            icon,
+            color
+          )
+        `)
+        .eq("user_id", userId)
+        .order("earned_at", { ascending: false });
+      
+      if (data) {
+        const formattedBadges = data.map(b => ({
+          id: b.id,
+          name: b.badges.name,
+          description: b.badges.description,
+          icon: b.badges.icon,
+          color: b.badges.color,
+          earned_at: b.earned_at,
+        }));
+        setUserBadges(formattedBadges);
+      }
+    }
+    
+    if (userId) loadUserBadges();
   }, [userId]);
 
   async function handleAvatarUpload(e) {
@@ -367,6 +403,46 @@ export default function UserProfilePage({ params }) {
           </div>
         </div>
 
+        {/* Badges Section */}
+        <div className="mb-12">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-2xl font-bold">🏅 Badges</h2>
+            <span className="text-sm text-gray-400">Achievements earned</span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {userBadges.length > 0 ? (
+              userBadges.map((badge) => (
+                <div
+                  key={badge.id}
+                  className="rounded-xl border border-gray-800 bg-zinc-900/50 p-4 text-center hover:border-indigo-500 transition group"
+                >
+                  <div className="text-4xl mb-2">{badge.icon}</div>
+                  <h3 className="font-semibold text-sm">{badge.name}</h3>
+                  <p className="text-xs text-gray-400 mt-1">{badge.description}</p>
+                  <p className="text-xs text-indigo-400 mt-2">
+                    Earned {new Date(badge.earned_at).toLocaleDateString()}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8 text-gray-400">
+                <div className="text-4xl mb-2">🏅</div>
+                <p>No badges earned yet. Keep contributing to unlock badges!</p>
+                <div className="mt-4 text-xs text-gray-500">
+                  <p>Badges you can earn:</p>
+                  <ul className="mt-2 space-y-1">
+                    <li>🎁 First Upload - Submit your first content</li>
+                    <li>⭐ Rising Creator - Submit 5 pieces of content</li>
+                    <li>🏆 Master Creator - Submit 20 pieces of content</li>
+                    <li>🔥 Popular Creator - Get 100+ total downloads</li>
+                    <li>❤️ Collector - Save 10 favorites</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* User's Published Content */}
         {userSubmissions.length > 0 && (
           <div className="mb-12">
@@ -391,17 +467,13 @@ export default function UserProfilePage({ params }) {
                       {item.type === "motorcycle" && "🏍️"}
                       {item.type === "boat" && "⛵"}
                       {item.type === "aircraft" && "✈️"}
-                      {item.type === "gun" && "🔫"}
-                      {item.type === "ped" && "👥"}
-                      {item.type === "map" && "🗺️"}
-                      {item.type === "clothing" && "👕"}
                     </span>
                     <h3 className="font-semibold group-hover:text-indigo-400 transition truncate">{item.name}</h3>
                   </div>
                   <p className="text-sm text-gray-400 capitalize">{item.category}</p>
                   <div className="mt-2 flex gap-3 text-xs text-gray-500">
-                    <span>👁️ {item.views || 0}</span>
                     <span>⬇️ {item.downloads || 0}</span>
+                    <span>👁️ {item.views || 0}</span>
                   </div>
                 </Link>
               ))}
@@ -453,7 +525,7 @@ export default function UserProfilePage({ params }) {
           </div>
         )}
 
-        {favorites.length === 0 && userSubmissions.length === 0 && userDownloads.length === 0 && (
+        {favorites.length === 0 && userSubmissions.length === 0 && userDownloads.length === 0 && userBadges.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             No activity yet. Start exploring and saving content!
           </div>

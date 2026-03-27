@@ -99,12 +99,12 @@ export default function UserProfilePage({ params }) {
     if (userId) loadUserData();
   }, [userId]);
 
-  // Load user badges
+  // STEP 4: Load user badges
   useEffect(() => {
     async function loadUserBadges() {
       if (!userId) return;
       
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_badges")
         .select(`
           *,
@@ -118,7 +118,11 @@ export default function UserProfilePage({ params }) {
         .eq("user_id", userId)
         .order("earned_at", { ascending: false });
       
-      if (data) {
+      if (error) {
+        console.error("Error loading badges:", error);
+      }
+      
+      if (data && data.length > 0) {
         const formattedBadges = data.map(b => ({
           id: b.id,
           name: b.badges.name,
@@ -403,14 +407,14 @@ export default function UserProfilePage({ params }) {
           </div>
         </div>
 
-        {/* Badges Section */}
+        {/* STEP 5: Badges Section */}
         <div className="mb-12">
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-2xl font-bold">🏅 Badges</h2>
             <span className="text-sm text-gray-400">Achievements earned</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {userBadges.length > 0 ? (
+            {userBadges && userBadges.length > 0 ? (
               userBadges.map((badge) => (
                 <div
                   key={badge.id}

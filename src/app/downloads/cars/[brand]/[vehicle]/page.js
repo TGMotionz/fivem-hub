@@ -8,13 +8,21 @@ import Header from "@/components/Header";
 import Comments from "@/components/Comments";
 import ShareButtons from "@/components/ShareButtons";
 
+// Complete brand name mapping - 60+ brands
 const brandNames = {
-  dodge: "Dodge", ferrari: "Ferrari", bmw: "BMW", tesla: "Tesla",
-  audi: "Audi", mercedes: "Mercedes", porsche: "Porsche",
-  lamborghini: "Lamborghini", ford: "Ford", chevrolet: "Chevrolet",
-  hyundai: "Hyundai", kia: "Kia", suzuki: "Suzuki", subaru: "Subaru",
-  honda: "Honda", nissan: "Nissan", toyota: "Toyota", volkswagen: "Volkswagen",
-  volvo: "Volvo", mazda: "Mazda", mitsubishi: "Mitsubishi"
+  acura: "Acura", "alfa-romeo": "Alfa Romeo", alpine: "Alpine", "aston-martin": "Aston Martin",
+  audi: "Audi", bentley: "Bentley", bmw: "BMW", bugatti: "Bugatti", buick: "Buick",
+  cadillac: "Cadillac", chevrolet: "Chevrolet", chrysler: "Chrysler", citroen: "Citroen",
+  dacia: "Dacia", daihatsu: "Daihatsu", dodge: "Dodge", ds: "DS", ferrari: "Ferrari",
+  fiat: "Fiat", ford: "Ford", genesis: "Genesis", gmc: "GMC", honda: "Honda",
+  hyundai: "Hyundai", infiniti: "Infiniti", isuzu: "Isuzu", jaguar: "Jaguar", jeep: "Jeep",
+  kia: "Kia", koenigsegg: "Koenigsegg", lamborghini: "Lamborghini", "land-rover": "Land Rover",
+  lexus: "Lexus", lincoln: "Lincoln", lotus: "Lotus", maserati: "Maserati", mazda: "Mazda",
+  mclaren: "McLaren", mercedes: "Mercedes-Benz", mg: "MG", mini: "Mini", mitsubishi: "Mitsubishi",
+  morgan: "Morgan", nissan: "Nissan", pagani: "Pagani", peugeot: "Peugeot", porsche: "Porsche",
+  ram: "Ram", renault: "Renault", "rolls-royce": "Rolls-Royce", seat: "SEAT", skoda: "Skoda",
+  subaru: "Subaru", suzuki: "Suzuki", tesla: "Tesla", toyota: "Toyota", volkswagen: "Volkswagen",
+  volvo: "Volvo"
 };
 
 function getPlatformIcon(url) {
@@ -58,7 +66,7 @@ async function trackDownload(slug, userId) {
   try {
     const { data: existing } = await supabase
       .from("content_items")
-      .select("downloads")
+      .select("downloads, author_id")
       .eq("slug", slug)
       .maybeSingle();
     
@@ -67,20 +75,19 @@ async function trackDownload(slug, userId) {
         .from("content_items")
         .update({ downloads: (existing.downloads || 0) + 1 })
         .eq("slug", slug);
-    }
-    
-    // Record download analytics
-    const { error: analyticsError } = await supabase
-      .from("download_analytics")
-      .insert({
-        content_slug: slug,
-        content_type: "vehicle",
-        user_id: userId || null,
-        downloaded_at: new Date(),
-      });
-    
-    if (analyticsError) {
-      console.error("Error tracking download:", analyticsError);
+      
+      const { error: analyticsError } = await supabase
+        .from("download_analytics")
+        .insert({
+          content_slug: slug,
+          content_type: "vehicle",
+          user_id: userId || null,
+          downloaded_at: new Date(),
+        });
+      
+      if (analyticsError) {
+        console.error("Error tracking download:", analyticsError);
+      }
     }
   } catch (error) {
     console.error("Error tracking download:", error);
@@ -135,7 +142,6 @@ export default function VehicleDetailPage({ params }) {
       setContent(data);
       setSelectedImage(data.image_url);
       
-      // Load author info
       if (data.author_id) {
         const { data: authorData } = await supabase
           .from("public_users")
@@ -187,7 +193,6 @@ export default function VehicleDetailPage({ params }) {
 
   const brandName = getBrandName();
   const platform = getPlatformIcon(content.download_url);
-  
   const allImages = [content.image_url, ...(content.images || [])].filter(Boolean);
 
   return (
@@ -196,7 +201,6 @@ export default function VehicleDetailPage({ params }) {
 
       <section className="mx-auto max-w-7xl px-6 py-12">
         <div className="grid gap-10 lg:grid-cols-2">
-          {/* Image Gallery Section */}
           <div className="rounded-2xl border border-gray-800 bg-zinc-900/50 p-4">
             <div className="flex h-[320px] items-center justify-center rounded-xl bg-gray-800 overflow-hidden mb-4">
               {selectedImage ? (
@@ -222,7 +226,6 @@ export default function VehicleDetailPage({ params }) {
             )}
           </div>
 
-          {/* Info Section */}
           <div>
             <p className="text-sm uppercase tracking-widest text-gray-400">{brandName}</p>
             <h1 className="mt-2 text-4xl font-bold">{content.name}</h1>
@@ -253,8 +256,8 @@ export default function VehicleDetailPage({ params }) {
               <div className="rounded-xl border border-gray-800 p-4">
                 <p className="text-sm text-gray-400">Statistics</p>
                 <div className="flex gap-4 mt-1">
-                  <span>👁️ {content.views || 0}</span>
-                  <span>⬇️ {content.downloads || 0}</span>
+                  <span>⬇️ {content.downloads || 0} downloads</span>
+                  <span>👁️ {content.views || 0} views</span>
                 </div>
               </div>
             </div>
@@ -283,7 +286,6 @@ export default function VehicleDetailPage({ params }) {
               <FavoriteButton brand={brand} vehicleSlug={vehicle} vehicleName={content.name} />
             </div>
 
-            {/* Share Buttons */}
             <div className="mt-4 pt-4 border-t border-gray-800">
               <p className="text-sm text-gray-400 mb-2">Share this content:</p>
               <ShareButtons title={content.name} url={`/downloads/cars/${brand}/${vehicle}`} />
@@ -291,7 +293,6 @@ export default function VehicleDetailPage({ params }) {
           </div>
         </div>
 
-        {/* Features and Installation */}
         <div className="grid gap-8 lg:grid-cols-2 mt-12">
           <div className="rounded-2xl border border-gray-800 p-6">
             <h2 className="text-2xl font-bold">✨ Features</h2>
@@ -318,7 +319,6 @@ export default function VehicleDetailPage({ params }) {
         </div>
       </section>
 
-      {/* Comments Section */}
       <div className="mx-auto max-w-7xl px-6 pb-20">
         <Comments contentId={vehicle} contentType="vehicle" />
       </div>

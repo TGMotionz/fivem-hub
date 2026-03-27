@@ -31,20 +31,20 @@ export default function HomePage() {
 
   useEffect(() => {
     async function loadContent() {
-      // Load popular vehicles
+      // Load popular vehicles - SORT BY DOWNLOADS
       const { data: vehicles } = await supabase
         .from("content_items")
         .select("*")
         .eq("type", "vehicle")
-        .order("views", { ascending: false })
+        .order("downloads", { ascending: false })
         .limit(4);
 
-      // Load popular scripts
+      // Load popular scripts - SORT BY DOWNLOADS
       const { data: scripts } = await supabase
         .from("content_items")
         .select("*")
         .eq("type", "script")
-        .order("views", { ascending: false })
+        .order("downloads", { ascending: false })
         .limit(4);
 
       // Load latest content
@@ -146,8 +146,8 @@ export default function HomePage() {
                   <h4 className="font-bold capitalize truncate">{item.name}</h4>
                   <p className="text-xs text-gray-400 mt-1 capitalize">{item.category}</p>
                   <div className="mt-2 flex gap-3 text-xs text-gray-500">
-                    <span>👁️ {item.views || 0}</span>
                     <span>⬇️ {item.downloads || 0}</span>
+                    <span>👁️ {item.views || 0}</span>
                   </div>
                 </Link>
               ))}
@@ -186,8 +186,8 @@ export default function HomePage() {
                 <h4 className="font-bold capitalize truncate">{item.name}</h4>
                 <p className="text-xs text-gray-400 mt-1 capitalize">{item.category}</p>
                 <div className="mt-2 flex gap-3 text-xs text-gray-500">
-                  <span>👁️ {item.views || 0}</span>
                   <span>⬇️ {item.downloads || 0}</span>
+                  <span>👁️ {item.views || 0}</span>
                 </div>
               </Link>
             ))}
@@ -195,7 +195,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Popular Vehicles */}
+      {/* Most Popular Vehicles - SORTED BY DOWNLOADS */}
       {!loading && popularVehicles.length > 0 && (
         <section className="mx-auto max-w-7xl px-6 py-16">
           <div className="flex justify-between items-center mb-8">
@@ -225,8 +225,8 @@ export default function HomePage() {
                 <h3 className="text-lg font-bold capitalize truncate">{vehicle.name}</h3>
                 <p className="mt-1 text-sm text-gray-400 capitalize">{vehicle.category}</p>
                 <div className="mt-4 flex gap-4 text-xs text-gray-500">
-                  <span>👁️ {vehicle.views?.toLocaleString() || 0}</span>
-                  <span>⬇️ {vehicle.downloads?.toLocaleString() || 0}</span>
+                  <span>⬇️ {vehicle.downloads?.toLocaleString() || 0} downloads</span>
+                  <span>👁️ {vehicle.views?.toLocaleString() || 0} views</span>
                 </div>
               </Link>
             ))}
@@ -234,13 +234,13 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Popular Scripts */}
+      {/* Most Popular Scripts - SORTED BY DOWNLOADS */}
       {!loading && popularScripts.length > 0 && (
         <section className="mx-auto max-w-7xl px-6 py-16">
           <div className="flex justify-between items-center mb-8">
             <div>
               <h3 className="text-3xl font-bold">📜 Trending Scripts</h3>
-              <p className="text-gray-400 mt-1">Most viewed scripts</p>
+              <p className="text-gray-400 mt-1">Most downloaded scripts</p>
             </div>
             <Link href="/downloads/scripts" className="text-indigo-400 hover:text-indigo-300">
               View all →
@@ -264,8 +264,8 @@ export default function HomePage() {
                 <h3 className="text-lg font-bold capitalize truncate">{script.name}</h3>
                 <p className="mt-1 text-sm text-gray-400 capitalize">{script.category}</p>
                 <div className="mt-4 flex gap-4 text-xs text-gray-500">
-                  <span>👁️ {script.views?.toLocaleString() || 0}</span>
-                  <span>⬇️ {script.downloads?.toLocaleString() || 0}</span>
+                  <span>⬇️ {script.downloads?.toLocaleString() || 0} downloads</span>
+                  <span>👁️ {script.views?.toLocaleString() || 0} views</span>
                 </div>
               </Link>
             ))}
@@ -285,7 +285,7 @@ export default function HomePage() {
           <Link href="/downloads/cars" className="rounded-2xl border border-gray-800 bg-gradient-to-br from-zinc-900 to-black p-8 text-center hover:border-indigo-500 transition">
             <div className="text-5xl mb-4">🚗</div>
             <h4 className="text-xl font-bold">Vehicles</h4>
-            <p className="text-sm text-gray-400 mt-2">35+ Brands</p>
+            <p className="text-sm text-gray-400 mt-2">60+ Brands</p>
           </Link>
           <Link href="/downloads/clothing" className="rounded-2xl border border-gray-800 bg-gradient-to-br from-zinc-900 to-black p-8 text-center hover:border-indigo-500 transition">
             <div className="text-5xl mb-4">👕</div>
@@ -335,11 +335,9 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-gray-800 py-12 mt-16">
         <div className="mx-auto max-w-7xl px-6">
-          {/* Online Users Counter */}
           <div className="mb-8 max-w-md mx-auto">
             <OnlineUsers />
           </div>
-          
           <div className="mb-8 max-w-md mx-auto">
             <NewsletterSignup />
           </div>

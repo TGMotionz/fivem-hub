@@ -13,37 +13,60 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     async function loadLeaderboard() {
-      // Load users sorted by contributions
+      // Get ALL users from public_users
       const { data: users } = await supabase
         .from("public_users")
         .select("*")
-        .order("contributions", { ascending: false })
+        .order("reputation", { ascending: false })
         .limit(50);
       
       if (users) {
-        // Get additional stats for each user
+        // Get actual stats for each user
         const usersWithStats = await Promise.all(
           users.map(async (user) => {
-            const { data: badges } = await supabase
-              .from("user_badges")
-              .select("badge_id")
-              .eq("user_id", user.id);
+            // Count actual approved submissions (contributions)
+            const { count: contributionsCount } = await supabase
+              .from("content_items")
+              .select("*", { count: "exact", head: true })
+              .eq("author_id", user.id);
             
-            const { data: downloads } = await supabase
+            // Count total downloads received on user's content
+            const { data: userContent } = await supabase
               .from("content_items")
               .select("downloads")
               .eq("author_id", user.id);
             
-            const totalDownloads = downloads?.reduce((sum, d) => sum + (d.downloads || 0), 0) || 0;
+            const totalDownloads = userContent?.reduce((sum, c) => sum + (c.downloads || 0), 0) || 0;
+            
+            // Count favorites received on user's content
+            let totalFavorites = 0;
+            if (userContent && userContent.length > 0) {
+              const contentIds = userContent.map(c => c.slug);
+              const { count: favCount } = await supabase
+                .from("favorites")
+                .select("*", { count: "exact", head: true })
+                .in("vehicle_slug", contentIds);
+              totalFavorites = favCount || 0;
+            }
+            
+            // Get user's badges count
+            const { count: badgeCount } = await supabase
+              .from("user_badges")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", user.id);
             
             return {
               ...user,
-              badge_count: badges?.length || 0,
+              contributions: contributionsCount || 0,
               total_downloads: totalDownloads,
+              total_favorites: totalFavorites,
+              badge_count: badgeCount || 0,
             };
           })
         );
         
+        // Sort by contributions (approved submissions)
+        usersWithStats.sort((a, b) => b.contributions - a.contributions);
         setLeaders(usersWithStats);
       }
       
@@ -80,7 +103,7 @@ export default function LeaderboardPage() {
       <section className="mx-auto max-w-7xl px-6 py-12">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold">🏆 Leaderboard</h1>
-          <p className="text-gray-400 mt-2">Top contributors and creators in our community</p>
+          <p className="text-gray-400 mt-2">Top contributors in our community</p>
         </div>
         
         {/* Tabs */}
@@ -133,13 +156,15 @@ export default function LeaderboardPage() {
                     <div className="flex gap-4 mt-1 text-xs text-gray-500">
                       <span>📦 {user.contributions || 0} submissions</span>
                       <span>⬇️ {user.total_downloads || 0} downloads</span>
+                      <span>❤️ {user.total_favorites || 0} favorites</span>
                       <span>🏅 {user.badge_count || 0} badges</span>
+                      <span>⭐ {user.reputation || 0} rep</span>
                     </div>
                   </div>
                   
                   <div className="text-right">
-                    <div className="text-lg font-bold text-indigo-400">{user.reputation || 0}</div>
-                    <div className="text-xs text-gray-500">reputation</div>
+                    <div className="text-lg font-bold text-indigo-400">{user.contributions || 0}</div>
+                    <div className="text-xs text-gray-500">submissions</div>
                   </div>
                 </div>
               </div>
